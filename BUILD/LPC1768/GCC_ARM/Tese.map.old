@@ -4644,7 +4644,7 @@ LOAD linker stubs
  .comment       0x000000cb       0x80 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileHandle.o)
  .comment       0x000000cb       0x80 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
 
-.debug_line     0x00000000     0x6dff
+.debug_line     0x00000000     0x6e07
  .debug_line    0x00000000        0x0 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/CRP.o
  .debug_line    0x00000000       0x96 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/except.o
  .debug_line    0x00000096       0xde ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/gpio_api.o
@@ -4666,28 +4666,28 @@ LOAD linker stubs
  .debug_line    0x00002399      0x907 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/queue.o
  .debug_line    0x00002ca0     0x13a4 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/tasks.o
  .debug_line    0x00004044      0x466 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/timers.o
- .debug_line    0x000044aa      0x3de BUILD/LPC1768/GCC_ARM/main.o
- .debug_line    0x00004888      0x27d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Serial.o)
- .debug_line    0x00004b05      0x398 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(SerialBase.o)
- .debug_line    0x00004e9d      0x132 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_gpio.o)
- .debug_line    0x00004fcf      0x105 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_pinmap_common.o)
- .debug_line    0x000050d4      0x293 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_ticker_api.o)
- .debug_line    0x00005367       0xa0 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_us_ticker_api.o)
- .debug_line    0x00005407      0x10d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FilePath.o)
- .debug_line    0x00005514      0x3b6 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Stream.o)
- .debug_line    0x000058ca       0x7c ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_assert.o)
- .debug_line    0x00005946      0x38f ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical.o)
- .debug_line    0x00005cd5      0x245 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_error.o)
- .debug_line    0x00005f1a      0x15d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_interface.o)
- .debug_line    0x00006077      0x113 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_mktime.o)
- .debug_line    0x0000618a      0x1d8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_rtc_time.o)
- .debug_line    0x00006362      0x2d3 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_semihost_api.o)
- .debug_line    0x00006635      0x11d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_sleep_manager.o)
- .debug_line    0x00006752       0xaf ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_wait_api_no_rtos.o)
- .debug_line    0x00006801       0xfb ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical_section_api.o)
- .debug_line    0x000068fc      0x2a6 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileBase.o)
- .debug_line    0x00006ba2      0x152 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileHandle.o)
- .debug_line    0x00006cf4      0x10b ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
+ .debug_line    0x000044aa      0x3e6 BUILD/LPC1768/GCC_ARM/main.o
+ .debug_line    0x00004890      0x27d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Serial.o)
+ .debug_line    0x00004b0d      0x398 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(SerialBase.o)
+ .debug_line    0x00004ea5      0x132 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_gpio.o)
+ .debug_line    0x00004fd7      0x105 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_pinmap_common.o)
+ .debug_line    0x000050dc      0x293 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_ticker_api.o)
+ .debug_line    0x0000536f       0xa0 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_us_ticker_api.o)
+ .debug_line    0x0000540f      0x10d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FilePath.o)
+ .debug_line    0x0000551c      0x3b6 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Stream.o)
+ .debug_line    0x000058d2       0x7c ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_assert.o)
+ .debug_line    0x0000594e      0x38f ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical.o)
+ .debug_line    0x00005cdd      0x245 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_error.o)
+ .debug_line    0x00005f22      0x15d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_interface.o)
+ .debug_line    0x0000607f      0x113 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_mktime.o)
+ .debug_line    0x00006192      0x1d8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_rtc_time.o)
+ .debug_line    0x0000636a      0x2d3 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_semihost_api.o)
+ .debug_line    0x0000663d      0x11d ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_sleep_manager.o)
+ .debug_line    0x0000675a       0xaf ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_wait_api_no_rtos.o)
+ .debug_line    0x00006809       0xfb ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical_section_api.o)
+ .debug_line    0x00006904      0x2a6 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileBase.o)
+ .debug_line    0x00006baa      0x152 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileHandle.o)
+ .debug_line    0x00006cfc      0x10b ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
 
 .debug_str      0x00000000     0x46f3
  .debug_str     0x00000000      0x170 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/CRP.o
@@ -4945,7 +4945,7 @@ LOAD linker stubs
  .debug_aranges
                 0x00001428       0x58 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
 
-.debug_ranges   0x00000000     0x1860
+.debug_ranges   0x00000000     0x1878
  .debug_ranges  0x00000000       0x28 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/gpio_api.o
  .debug_ranges  0x00000028       0x98 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/mbed_board.o
  .debug_ranges  0x000000c0       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/mbed_fault_handler.o
@@ -4964,28 +4964,28 @@ LOAD linker stubs
  .debug_ranges  0x00000810      0x180 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/queue.o
  .debug_ranges  0x00000990      0x2b0 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/tasks.o
  .debug_ranges  0x00000c40       0xe8 BUILD/LPC1768/GCC_ARM/freertos-cm3/src/timers.o
- .debug_ranges  0x00000d28      0x130 BUILD/LPC1768/GCC_ARM/main.o
- .debug_ranges  0x00000e58       0xb8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Serial.o)
- .debug_ranges  0x00000f10      0x128 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(SerialBase.o)
- .debug_ranges  0x00001038       0x70 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_gpio.o)
- .debug_ranges  0x000010a8       0x38 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_pinmap_common.o)
- .debug_ranges  0x000010e0       0xb8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_ticker_api.o)
- .debug_ranges  0x00001198       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_us_ticker_api.o)
- .debug_ranges  0x000011b8       0x40 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FilePath.o)
- .debug_ranges  0x000011f8      0x140 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Stream.o)
- .debug_ranges  0x00001338       0x10 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_assert.o)
- .debug_ranges  0x00001348       0xe8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical.o)
- .debug_ranges  0x00001430       0x98 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_error.o)
- .debug_ranges  0x000014c8       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_interface.o)
- .debug_ranges  0x00001510       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_mktime.o)
- .debug_ranges  0x00001530       0x40 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_rtc_time.o)
- .debug_ranges  0x00001570      0x108 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_semihost_api.o)
- .debug_ranges  0x00001678       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_sleep_manager.o)
- .debug_ranges  0x000016c0       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_wait_api_no_rtos.o)
- .debug_ranges  0x000016e0       0x38 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical_section_api.o)
- .debug_ranges  0x00001718       0x98 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileBase.o)
- .debug_ranges  0x000017b0       0x68 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileHandle.o)
- .debug_ranges  0x00001818       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
+ .debug_ranges  0x00000d28      0x148 BUILD/LPC1768/GCC_ARM/main.o
+ .debug_ranges  0x00000e70       0xb8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Serial.o)
+ .debug_ranges  0x00000f28      0x128 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(SerialBase.o)
+ .debug_ranges  0x00001050       0x70 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_gpio.o)
+ .debug_ranges  0x000010c0       0x38 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_pinmap_common.o)
+ .debug_ranges  0x000010f8       0xb8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_ticker_api.o)
+ .debug_ranges  0x000011b0       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_us_ticker_api.o)
+ .debug_ranges  0x000011d0       0x40 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FilePath.o)
+ .debug_ranges  0x00001210      0x140 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(Stream.o)
+ .debug_ranges  0x00001350       0x10 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_assert.o)
+ .debug_ranges  0x00001360       0xe8 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical.o)
+ .debug_ranges  0x00001448       0x98 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_error.o)
+ .debug_ranges  0x000014e0       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_interface.o)
+ .debug_ranges  0x00001528       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_mktime.o)
+ .debug_ranges  0x00001548       0x40 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_rtc_time.o)
+ .debug_ranges  0x00001588      0x108 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_semihost_api.o)
+ .debug_ranges  0x00001690       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_sleep_manager.o)
+ .debug_ranges  0x000016d8       0x20 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_wait_api_no_rtos.o)
+ .debug_ranges  0x000016f8       0x38 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_critical_section_api.o)
+ .debug_ranges  0x00001730       0x98 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileBase.o)
+ .debug_ranges  0x000017c8       0x68 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(FileHandle.o)
+ .debug_ranges  0x00001830       0x48 ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM\libmbed.a(mbed_alloc_wrappers.o)
 
 .debug_frame    0x00000000     0x4d00
  .debug_frame   0x00000000       0x6c ./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM/gpio_api.o

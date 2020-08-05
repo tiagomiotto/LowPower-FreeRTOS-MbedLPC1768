@@ -179,7 +179,7 @@ int main()
 volatile unsigned long x = 0, y = 0;
 void vTask1( void * pvParameters )
 {
-    const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
 
     xLastWakeTime = xTaskGetTickCount();
