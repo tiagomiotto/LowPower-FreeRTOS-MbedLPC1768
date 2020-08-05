@@ -179,8 +179,9 @@ int main()
 volatile unsigned long x = 0, y = 0;
 void vTask1( void * pvParameters )
 {
-    const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = 200 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
+    struct RTC_DATA now;
 
     xLastWakeTime = xTaskGetTickCount();
     for( ;; ) {
@@ -192,12 +193,15 @@ void vTask1( void * pvParameters )
             myled1=0;
             led=0;
         }
-
+    
         if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
             //myled2=1;
             contador++;
 
         }
+              now = getTime();
+            
+        pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         vTaskDelayUntil( &xLastWakeTime, xDelay );
         //myled =0;
         //vTaskDelay( xDelay );
