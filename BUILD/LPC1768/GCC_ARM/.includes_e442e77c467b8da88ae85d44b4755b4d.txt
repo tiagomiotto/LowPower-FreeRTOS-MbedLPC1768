@@ -1,1 +1,0 @@
--I. -I./ClockControl -I./LPC1768_RTC -I./PowerControl -I./RTC -I./freertos-cm3 -I./freertos-cm3/src -I./freertos-cm3/src/include -I./freertos-cm3/src/portable -I./freertos-cm3/src/portable/RVDS -I./freertos-cm3/src/portable/RVDS/ARM_CM3 -I./mbed -I./mbed/TARGET_LPC1768/TOOLCHAIN_GCC_ARM -I./mbed/drivers -I./mbed/hal -I./mbed/platform
