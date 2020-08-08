@@ -75,4 +75,4 @@ BUILD\LPC1768\GCC_ARM\main.o: main.cpp \
  freertos-cm3/src/include/mpu_wrappers.h freertos-cm3/src/include/task.h \
  freertos-cm3/src/include/list.h PowerControl/PowerControl.h \
  ClockControl/ClockControl.h calculations.h RTC/RTC.h \
- TARGET_LPC1768_N/LPC17xx.h LPC1768_RTC/lpc1768_rtc.h
+ TARGET_LPC1768_N/LPC17xx.h LPC1768_RTC/lpc1768_rtc.h cycleCounter.h

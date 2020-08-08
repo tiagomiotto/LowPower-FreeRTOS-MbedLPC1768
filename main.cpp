@@ -9,6 +9,9 @@
 #include "TARGET_LPC1768_N/LPC17xx.h"
 #include "lpc1768_rtc.h"
 
+#include "cycleCounter.h"
+
+//#define cycleCounter 1
 
 DigitalOut myled(LED1);
 DigitalOut myled1(LED3);
@@ -44,6 +47,7 @@ queue send software timer respectively. */
 /*-----------------------------------------------------------*/
 void vTask1( void * pvParameters );
 void vTask2( void * pvParameters );
+void vTask3( void * pvParameters );
 Serial pc(USBTX, USBRX);
 int led =0;
 volatile long contador=0;
@@ -146,6 +150,8 @@ int main()
     struct RTC_DATA now = defaultTime();
     initRTC(now);
 
+    KIN1_InitCycleCounter(); /* enable DWT hardware */
+
     //RTC::alarm(&alarmFunction, t2);
     //setSystemFrequency(3,0,36, 1);
     ///Serial pc(USBTX, USBRX);
@@ -161,7 +167,7 @@ int main()
                 mainQUEUE_SEND_TASK_PRIORITY,/* The priority assigned to the task. */
                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    // xTaskCreate( vTask2, "TX", 2048, NULL, mainQUEUE_RECEIVE_TASK_PRIORITY, NULL );
+    xTaskCreate( vTask2, "TX", configMINIMAL_STACK_SIZE*10, NULL, mainQUEUE_RECEIVE_TASK_PRIORITY, NULL );
 
 
 
@@ -179,7 +185,39 @@ int main()
 volatile unsigned long x = 0, y = 0;
 void vTask1( void * pvParameters )
 {
-    const TickType_t xDelay = 200 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
+    TickType_t xLastWakeTime;
+    struct RTC_DATA now;
+
+    xLastWakeTime = xTaskGetTickCount();
+    for( ;; ) {
+        deadline1= xLastWakeTime + xDelay;
+        if(led==0) {
+            myled=1;
+            led=1;
+        } else {
+            myled1=1;
+            led=0;
+        }
+    
+        if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+            //myled2=1;
+            contador++;
+
+        }
+              now = getTime();
+            
+        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
+        vTaskDelayUntil( &xLastWakeTime, xDelay );
+        //myled =0;
+        //vTaskDelay( xDelay );
+
+    }
+}
+
+void vTask3( void * pvParameters )
+{
+    const TickType_t xDelay = 1500 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     struct RTC_DATA now;
 
@@ -201,29 +239,49 @@ void vTask1( void * pvParameters )
         }
               now = getTime();
             
-        pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
+        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         vTaskDelayUntil( &xLastWakeTime, xDelay );
         //myled =0;
         //vTaskDelay( xDelay );
 
     }
 }
+
+
 void vTask2( void * pvParameters )
 {
     const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
-    TickType_t begin;
+    long begin, end;
     struct RTC_DATA now;
     xLastWakeTime = xTaskGetTickCount();
     srand(time(NULL));
+    long n;
 
     for( ;; ) {
         deadline2= xLastWakeTime + xDelay;
         myled4=1;
-        begin= xTaskGetTickCount();
-        //long cycles =rand()%100000+10000;
-        long cycles = 50000;
-        fibonnacciCalculation(cycles);
+        int cycles = 1012000; //Takes around 210ms at 96Mhz
+
+        #ifdef cycleCounter
+        KIN1_ResetCycleCounter(); /* reset cycle counter */
+        KIN1_EnableCycleCounter(); /* start counting */
+        n= fibonnacciCalculation(cycles);
+        end = KIN1_GetCycleCounter(); /* get cycle counter */
+        double timeInMs= end/(SystemCoreClock/1000.0);
+        pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
+        "%lf ms \n", end,SystemCoreClock,n, timeInMs);
+        
+        #else
+        begin = xTaskGetTickCount();
+        n= fibonnacciCalculation(cycles);
+        end = xTaskGetTickCount();
+        double timeInMs= (end-begin)*portTICK_PERIOD_MS;
+        pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+        "%lf ms \n", end-begin,SystemCoreClock,n, timeInMs);
+        #endif
+
+        //pc.printf(" \n");
         //if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) myled2=1;
         //char stats[300]={0};
         //vTaskGetRunTimeStats( stats );
@@ -232,7 +290,7 @@ void vTask2( void * pvParameters )
         /* Read Time */
         //PrintTaskInfo();
         now = getTime();
-        pc.printf("Hello world %d\n", contador);
+        //pc.printf("Hello world %d\n", contador);
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         //pc.printf("%d ms,%d ticks, %d last, %d deadline1, %d deadline2\n",cycles,xTaskGetTickCount(), xLastWakeTime, deadline1,deadline2);
         //pc.printf("%d ticks, %d idle time, %d deadline2\n",xTaskGetTickCount(),useridleTime,deadline2);
@@ -248,21 +306,21 @@ void vTask2( void * pvParameters )
 //                }
 //            }
 //        }
-        if(contador%5==0){
-            if(frequencyDivider<3){
-                setSystemFrequency(2+frequencyDivider,0,36, 1);       
-                    Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
+        // if(contador%5==0){
+        //     if(frequencyDivider<3){
+        //         setSystemFrequency(2+frequencyDivider,0,36, 1);       
+        //             Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
                    
-                    frequencyDivider++;
-                }
-                else{
-                    frequencyDivider=1;
-                    setSystemFrequency(2+frequencyDivider,0,36, 1);       
-                    Serial pc2(USBTX, USBRX); 
-                }
-            }    
-          pc.printf("%d Hz, %d, divider %d\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider);       
-        contador++;
+        //             frequencyDivider++;
+        //         }
+        //         else{
+        //             frequencyDivider=1;
+        //             setSystemFrequency(2+frequencyDivider,0,36, 1);       
+        //             Serial pc2(USBTX, USBRX); 
+        //         }
+        //     }    
+        //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
+        // contador++;
         vTaskDelayUntil( &xLastWakeTime, xDelay );
 
     }
@@ -273,9 +331,13 @@ extern "C"
 #endif
 void vApplicationIdleHook( void )
 {
-    if(led==0)myled =1;
+    if(led==0){
+        myled =0;
+        myled1=0;
+        myled4=0;}
     else {
-        myled1=1;
+        myled =0;
+        myled1=0;
         myled4=0;
     }
     
@@ -288,13 +350,25 @@ void vApplicationIdleHook( void )
     //DeepPowerDown();
 }
 
-
+#ifdef __cplusplus
+extern "C"
+#endif
 void vApplicationMallocFailedHook( void )
 {
     while (1) {
-        pc.printf("Hello, world!\n");
+        pc.printf("Malloc error !! Hello, world!\n");
     }
 }
+
+#ifdef __cplusplus
+extern "C"
+#endif
+void vApplicationStackOverflowHook( TaskHandle_t xTask,
+                                    signed char *pcTaskName ){
+                                            while (1) {
+        pc.printf("Stack Overflow error !! Hello, world!\n");
+    }
+                                    }
 
 
 
