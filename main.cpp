@@ -26,6 +26,19 @@ DigitalOut myled4(LED4);
 #define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
 
 
+/*
+ * The tick hook function.  This compensates
+ * the tick count to compensate for frequency changes
+ */
+const uint8_t mValues[12] = {36,33,30,27,24,18,12,9,6,3};
+const int frequencyLevels[]={96, 88, 80, 72, 64, 48, 32, 24, 16, 8 };
+const int staticTickIncrement[]={ 0, 0, 0, 0, 0, 1, 2, 3, 5, 11 };
+const int periodicTickIncrement[]={0, 11, 5, 3, 2, 0, 0, 0, 0, 0 };
+volatile int currentFrequencyLevel = 0;
+volatile short periodicTickIncrementCount= 0;
+volatile bool frequencyChanged = false;
+const short availableFrequencyLevels = 10;
+
 
 /* Priorities at which the tasks are created. */
 #define mainQUEUE_RECEIVE_TASK_PRIORITY     ( tskIDLE_PRIORITY + 2 )
@@ -45,9 +58,9 @@ queue send software timer respectively. */
 #define mainVALUE_SENT_FROM_TIMER           ( 200UL )
 
 /*-----------------------------------------------------------*/
-void vTask1( void * pvParameters );
-void vTask2( void * pvParameters );
-void vTask3( void * pvParameters );
+void vTask1(void * pvParameters);
+void vTask2(void * pvParameters);
+void vTask3(void * pvParameters);
 Serial pc(USBTX, USBRX);
 int led =0;
 volatile long contador=0;
@@ -64,13 +77,13 @@ volatile tm t3;
 #define minDivider 1
 
 //DEBUG VARIABLES
-char ptrTaskList[500]= {0} ;
+char ptrTaskList[500]={ 0 };
 static void PrintTaskInfo();
 //Changed min stack size to 300
 
-void alarmFunction( void )
+void alarmFunction(void)
 {
-    if(myled2==0)myled2=1;
+    if (myled2==0)myled2=1;
     else myled2=0;
     //RTC::alarm(&alarmFunction, t2);
     //error("Not most useful alarm function");
@@ -84,7 +97,7 @@ void alarmFunction( void )
 class Watchdog
 {
 public:
-// Load timeout value in watchdog timer and enable
+    // Load timeout value in watchdog timer and enable
     void kick(float s)
     {
         LPC_WDT->WDCLKSEL = 0x02;               // Set CLK src to RTC for DeepSleep wakeup
@@ -92,8 +105,8 @@ public:
         LPC_WDT->WDMOD = 0x3;                   // Enabled and Reset
         kick();
     }
-// "kick" or "feed" the dog - reset the watchdog timer
-// by writing this required bit pattern
+    // "kick" or "feed" the dog - reset the watchdog timer
+    // by writing this required bit pattern
     void kick()
     {
         LPC_WDT->WDFEED = 0xAA;
@@ -146,28 +159,27 @@ int main()
 //        NVIC_SystemReset();
 //    }
     time_t t;
-    srand((unsigned) time(&t));
+    srand((unsigned)time(&t));
     struct RTC_DATA now = defaultTime();
     initRTC(now);
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
 
     //RTC::alarm(&alarmFunction, t2);
-    //setSystemFrequency(3,0,36, 1);
-    ///Serial pc(USBTX, USBRX);
+
     //pc.printf("bbbb %d\n", tee-1);
     //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
     //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
     /* Start the two tasks as described in the comments at the top of this
     file. */
-   xTaskCreate( vTask1,           /* The function that implements the task. */
-                "Rx",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
-                configMINIMAL_STACK_SIZE,       /* The size of the stack to allocate to the task. */
-                NULL,                           /* The parameter passed to the task - not used in this simple case. */
-                mainQUEUE_SEND_TASK_PRIORITY,/* The priority assigned to the task. */
-                NULL );                         /* The task handle is not required, so NULL is passed. */
+    //    xTaskCreate( vTask1,           /* The function that implements the task. */
+    //                 "Rx",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
+    //                 configMINIMAL_STACK_SIZE,       /* The size of the stack to allocate to the task. */
+    //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
+    //                 mainQUEUE_SEND_TASK_PRIORITY,/* The priority assigned to the task. */
+    //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    xTaskCreate( vTask2, "TX", configMINIMAL_STACK_SIZE*10, NULL, mainQUEUE_RECEIVE_TASK_PRIORITY, NULL );
+    xTaskCreate(vTask2, "TX", configMINIMAL_STACK_SIZE*10, NULL, mainQUEUE_RECEIVE_TASK_PRIORITY, NULL);
 
 
 
@@ -179,68 +191,70 @@ int main()
     there was insufficient FreeRTOS heap memory available for the idle and/or
     timer tasks to be created.  See the memory management section on the
     FreeRTOS web site for more details. */
-    for( ;; );
+    for (;; );
 }
 
 volatile unsigned long x = 0, y = 0;
-void vTask1( void * pvParameters )
+void vTask1(void * pvParameters)
 {
     const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     struct RTC_DATA now;
 
     xLastWakeTime = xTaskGetTickCount();
-    for( ;; ) {
+    for (;; ) {
         deadline1= xLastWakeTime + xDelay;
-        if(led==0) {
+        if (led==0) {
             myled=1;
             led=1;
-        } else {
+        }
+        else {
             myled1=1;
             led=0;
         }
-    
-        if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+
+        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
             //myled2=1;
             contador++;
 
         }
-              now = getTime();
-            
+        now = getTime();
+
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
-        vTaskDelayUntil( &xLastWakeTime, xDelay );
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
         //myled =0;
         //vTaskDelay( xDelay );
 
     }
 }
 
-void vTask3( void * pvParameters )
+void vTask3(void * pvParameters)
 {
     const TickType_t xDelay = 1500 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     struct RTC_DATA now;
 
     xLastWakeTime = xTaskGetTickCount();
-    for( ;; ) {
+    for (;; ) {
         deadline1= xLastWakeTime + xDelay;
-        if(led==0) {
+        if (led==0) {
             myled=0;
             led=1;
-        } else {
+        }
+        else {
             myled1=0;
             led=0;
         }
-    
-        if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+
+        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
             //myled2=1;
             contador++;
 
         }
-              now = getTime();
-            
+        now = getTime();
+
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
-        vTaskDelayUntil( &xLastWakeTime, xDelay );
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
         //myled =0;
         //vTaskDelay( xDelay );
 
@@ -248,7 +262,7 @@ void vTask3( void * pvParameters )
 }
 
 
-void vTask2( void * pvParameters )
+void vTask2(void * pvParameters)
 {
     const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
@@ -258,7 +272,7 @@ void vTask2( void * pvParameters )
     srand(time(NULL));
     long n;
 
-    for( ;; ) {
+    for (;; ) {
         deadline2= xLastWakeTime + xDelay;
         myled4=1;
         int cycles = 1012000; //Takes around 210ms at 96Mhz
@@ -270,15 +284,15 @@ void vTask2( void * pvParameters )
         end = KIN1_GetCycleCounter(); /* get cycle counter */
         double timeInMs= end/(SystemCoreClock/1000.0);
         pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
-        "%lf ms \n", end,SystemCoreClock,n, timeInMs);
-        
+            "%lf ms \n", end, SystemCoreClock, n, timeInMs);
+
         #else
         begin = xTaskGetTickCount();
         n= fibonnacciCalculation(cycles);
         end = xTaskGetTickCount();
         double timeInMs= (end-begin)*portTICK_PERIOD_MS;
-        pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
-        "%lf ms \n", end-begin,SystemCoreClock,n, timeInMs);
+        //pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+        //    "%lf ms \n", end-begin, SystemCoreClock, n, timeInMs);
         #endif
 
         //pc.printf(" \n");
@@ -294,7 +308,7 @@ void vTask2( void * pvParameters )
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         //pc.printf("%d ms,%d ticks, %d last, %d deadline1, %d deadline2\n",cycles,xTaskGetTickCount(), xLastWakeTime, deadline1,deadline2);
         //pc.printf("%d ticks, %d idle time, %d deadline2\n",xTaskGetTickCount(),useridleTime,deadline2);
-        
+
         //pc.printf("%s \n", stats);
 //        if(deadline2 >(xTaskGetTickCount()-xLastWakeTime)*2) {
 //            if(frequencyDivider<=minDivider) {
@@ -310,7 +324,7 @@ void vTask2( void * pvParameters )
         //     if(frequencyDivider<3){
         //         setSystemFrequency(2+frequencyDivider,0,36, 1);       
         //             Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
-                   
+
         //             frequencyDivider++;
         //         }
         //         else{
@@ -320,8 +334,15 @@ void vTask2( void * pvParameters )
         //         }
         //     }    
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
-        // contador++;
-        vTaskDelayUntil( &xLastWakeTime, xDelay );
+
+        if (contador != 0 && contador%3==0 && currentFrequencyLevel<=4) {
+            currentFrequencyLevel++;
+            setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
+            frequencyChanged=true;
+            Serial pc(USBTX, USBRX);
+        }
+        contador++;
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
 
     }
 }
@@ -329,19 +350,20 @@ void vTask2( void * pvParameters )
 #ifdef __cplusplus
 extern "C"
 #endif
-void vApplicationIdleHook( void )
+void vApplicationIdleHook(void)
 {
-    if(led==0){
+    if (led==0) {
         myled =0;
         myled1=0;
-        myled4=0;}
+        myled4=0;
+    }
     else {
         myled =0;
         myled1=0;
         myled4=0;
     }
-    
-    
+
+
     Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
 
@@ -353,7 +375,7 @@ void vApplicationIdleHook( void )
 #ifdef __cplusplus
 extern "C"
 #endif
-void vApplicationMallocFailedHook( void )
+void vApplicationMallocFailedHook(void)
 {
     while (1) {
         pc.printf("Malloc error !! Hello, world!\n");
@@ -363,12 +385,12 @@ void vApplicationMallocFailedHook( void )
 #ifdef __cplusplus
 extern "C"
 #endif
-void vApplicationStackOverflowHook( TaskHandle_t xTask,
-                                    signed char *pcTaskName ){
-                                            while (1) {
+void vApplicationStackOverflowHook(TaskHandle_t xTask,
+    signed char *pcTaskName) {
+    while (1) {
         pc.printf("Stack Overflow error !! Hello, world!\n");
     }
-                                    }
+}
 
 
 
@@ -376,9 +398,9 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask,
 #ifdef __cplusplus
 extern "C"
 #endif
-void vConfigureTimerForRunTimeStats( void )
+void vConfigureTimerForRunTimeStats(void)
 {
-const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
+    const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
 
     /* This function configures a timer that is used as the time base when
     collecting run time statistical information - basically the percentage
@@ -398,18 +420,18 @@ const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE
 
     /* Prescale to a frequency that is good enough to get a decent resolution,
     but not too fast so as to overflow all the time. */
-    LPC_TIM0->PR =  ( configCPU_CLOCK_HZ / 10000UL ) - 1UL;
+    LPC_TIM0->PR =  (configCPU_CLOCK_HZ / 10000UL) - 1UL;
 
     /* Start the counter. */
     LPC_TIM0->TCR = TCR_COUNT_ENABLE;
-    
+
 }
 
 static void PrintTaskInfo()
 {
-    
+
     pc.printf("**********************************\n");
-    pc.printf("Task  State   Prio    Stack    Num\n"); 
+    pc.printf("Task  State   Prio    Stack    Num\n");
     pc.printf("**********************************\n");
     vTaskList(ptrTaskList);
     pc.printf(ptrTaskList);

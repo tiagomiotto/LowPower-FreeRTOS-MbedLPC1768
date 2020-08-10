@@ -89,6 +89,7 @@ extern uint32_t SystemCoreClock;
 /* User included */
 #define configUSE_TICKLESS_IDLE        0
 
+
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
 extern volatile unsigned long ulHighFrequencyTimerTicks;
