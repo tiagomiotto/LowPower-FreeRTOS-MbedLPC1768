@@ -291,8 +291,8 @@ void vTask2(void * pvParameters)
         n= fibonnacciCalculation(cycles);
         end = xTaskGetTickCount();
         double timeInMs= (end-begin)*portTICK_PERIOD_MS;
-        //pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
-        //    "%lf ms \n", end-begin, SystemCoreClock, n, timeInMs);
+        pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+            "%lf ms\n", end-begin, SystemCoreClock, n, timeInMs);
         #endif
 
         //pc.printf(" \n");
@@ -336,10 +336,12 @@ void vTask2(void * pvParameters)
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
         if (contador != 0 && contador%3==0 && currentFrequencyLevel<=4) {
+            pc.fsync();
             currentFrequencyLevel++;
             setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
             frequencyChanged=true;
             Serial pc(USBTX, USBRX);
+            
         }
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
@@ -437,3 +439,8 @@ static void PrintTaskInfo()
     pc.printf(ptrTaskList);
     pc.printf("**********************************\n");
 }
+
+/* 
+* Pre sleep processing for tickless
+*/
+

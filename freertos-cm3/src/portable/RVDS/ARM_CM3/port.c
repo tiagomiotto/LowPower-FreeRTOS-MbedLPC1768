@@ -434,40 +434,12 @@ void xPortSysTickHandler(void)
 	portDISABLE_INTERRUPTS();
 
 	/* Increment the RTOS tick. */
-
-
 	if (xTaskIncrementTick() != pdFALSE)
 	{
 		/* A context switch is required.  Context switching is performed in
 		the PendSV interrupt.  Pend the PendSV interrupt. */
 		portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
 	}
-
-	if(frequencyChanged) {
-		periodicTickIncrementCount=0;
-		frequencyChanged=false;
-	}
-
-	short extraTicks = staticTickIncrement[currentFrequencyLevel];
-	if (periodicTickIncrementCount==periodicTickIncrement[currentFrequencyLevel]
-		&& periodicTickIncrement[currentFrequencyLevel]!=0) {
-		extraTicks++;
-		periodicTickIncrementCount=0;
-	}
-
-	for (int i = 0; i < extraTicks; i++)
-	{
-		/* Increment the RTOS tick. */
-		if (xTaskIncrementTick() != pdFALSE)
-		{
-			/* A context switch is required.  Context switching is performed in
-			the PendSV interrupt.  Pend the PendSV interrupt. */
-			portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
-		}
-	}
-
-	periodicTickIncrementCount++;
-
 
 	portENABLE_INTERRUPTS();
 }

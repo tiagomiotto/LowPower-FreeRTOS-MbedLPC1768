@@ -87,6 +87,11 @@
 extern uint32_t SystemCoreClock;
 
 /* User included */
+
+/* Set configDYNAMIC_FREQUENCY_LOW_POWER_MODE to one to run the simple blinky low power
+demo, or 0 to run the more comprehensive test and demo application. */
+#define configDYNAMIC_FREQUENCY_LOW_POWER_MODE			1
+
 #define configUSE_TICKLESS_IDLE        0
 
 
@@ -185,8 +190,19 @@ header file. */
 standard names. */
 #define vPortSVCHandler SVC_Handler
 #define xPortPendSVHandler PendSV_Handler
-#define xPortSysTickHandler SysTick_Handler
+
 /* User Defines */
+
+
+/* A few settings are dependent on the configDYNAMIC_FREQUENCY_LOW_POWER_MODE setting. */
+#if configDYNAMIC_FREQUENCY_LOW_POWER_MODE == 1
+	#define configTICK_RATE_HZ						( 100 )
+	#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 	( 20 + 1 ) /* ( ( 200 / portTICK_PERIOD_MS ) + 1 ) written out pre-processed to enable #error statements to check its value. */
+	#define configUSE_TIMERS						0
+    #define dynamicFrequencySysTickHandler SysTick_Handler
+#else
+#define xPortSysTickHandler SysTick_Handler
+#endif
 
 #define DVFS_ON 1
 #endif /* FREERTOS_CONFIG_H */
