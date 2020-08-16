@@ -46,10 +46,11 @@ extern volatile bool frequencyChanged;
 #define SBIT_MR0I    0
 #define SBIT_MR0R    1
 #define SBIT_CNTEN   0
+#define SBIT_CNRST   1
 #define PCLK_TIMER1  4    
 
 /* The frequency at which TIM2 will run. */
-#define lpCLOCK_INPUT_FREQUENCY 	( 1000UL )
+#define lpCLOCK_INPUT_FREQUENCY 	( 1000000UL )
 
 /* Calculate how many clock increments make up a single tick period. */
 static const uint32_t ulReloadValueForOneTick = ( ( lpCLOCK_INPUT_FREQUENCY / configTICK_RATE_HZ ) - 1 );
@@ -122,11 +123,40 @@ void vPortSetupTimerInterrupt(void){
 
     LPC_TIM1->MCR  = (1<<SBIT_MR0I) | (1<<SBIT_MR0R);     /* Clear TC on MR0 match and Generate Interrupt*/
     LPC_TIM1->PR   = getPrescalarForUs(PCLK_TIMER1);      /* Prescalar for 1us */
-    LPC_TIM1->MR0  = (1000/configTICK_RATE_HZ)*1000;                 /* Load timer value to generate 10ms delay*/
+    LPC_TIM1->MR0  = (1000/configTICK_RATE_HZ)*1000;      /* Load timer value to generate 10ms delay*/
     LPC_TIM1->TCR  = (1 <<SBIT_CNTEN);                    /* Start timer by setting the Counter Enable*/
     NVIC_EnableIRQ(TIMER1_IRQn);                          /* Enable Timer1 Interrupt */
   
 }
+
+void disableTIMER1(void){
+
+    LPC_TIM1->TCR  = (0 << SBIT_CNTEN);                    /* Start timer by setting the Counter Enable*/
+    NVIC_DisableIRQ(TIMER1_IRQn);                          /* Enable Timer1 Interrupt */
+  
+}
+
+void enableTIMER1(void){
+
+    LPC_TIM1->TCR  = (1 << SBIT_CNTEN);                    /* Stop timer by setting the Counter Enable to 0*/
+    NVIC_EnableIRQ(TIMER1_IRQn);                          /* Disable Timer1 Interrupt */
+  
+}
+
+void resetTIMER1(void){
+
+    LPC_TIM1->TCR  = (1 << SBIT_CNRST);                    /* Reset the timer by setting the Counter Reset*/
+  
+}
+
+void setReloadValueTimer1(int reloadValue){
+	LPC_TIM1->MR0  = reloadValue;   
+}
+
+void setCounterToZeroTimer1(void){
+	LPC_TIM1->TC  = 0UL;   
+}
+
 
 void TIMER1_IRQHandler(void) 
 {
@@ -167,4 +197,162 @@ unsigned int getPrescalarForUs(uint8_t timerPclkBit)
     prescalarForUs =pclk/1000000 - 1;                 /* Prescalar for 1us (1000000Counts/sec) */
 
     return prescalarForUs;
+}
+
+void vPortSuppressTicksAndSleep(TickType_t xExpectedIdleTime)
+{
+	uint32_t ulReloadValue, ulCompleteTickPeriods, ulCompletedSysTickDecrements;
+	TickType_t xModifiableIdleTime;
+
+	/* Make sure the SysTick reload value does not overflow the counter. */
+	if (xExpectedIdleTime > xMaximumPossibleSuppressedTicks)
+	{
+		xExpectedIdleTime = xMaximumPossibleSuppressedTicks;
+	}
+
+	/* Stop the Tick Timer momentarily.  The time the Tick Timer is stopped for
+	is accounted for as best it can be, but using the tickless mode will
+	inevitably result in some tiny drift of the time maintained by the
+	kernel with respect to calendar time. */
+	disableTIMER1();
+
+	/* Calculate the reload value required to wait xExpectedIdleTime
+	tick periods.  -1 is used because this code will execute part way
+	through one of the tick periods. */
+	ulReloadValue = ulReloadValueForOneTick * xExpectedIdleTime;
+
+	if (ulReloadValue > ulStoppedTimerCompensation)
+	{
+		ulReloadValue -= ulStoppedTimerCompensation;
+	}
+
+	/* Enter a critical section but don't use the taskENTER_CRITICAL()
+	method as that will mask interrupts that should exit sleep mode. */
+	__asm volatile("cpsid i" ::: "memory");
+	__asm volatile("dsb");
+	__asm volatile("isb");
+
+	/* If a context switch is pending or a task is waiting for the scheduler
+	to be unsuspended then abandon the low power entry. */
+	if (eTaskConfirmSleepModeStatus() == eAbortSleep)
+	{
+		/* Restart from whatever is left in the count register to complete
+		this tick period. */
+		enableTIMER1();
+
+		/* Re-enable interrupts - see comments above the cpsid instruction()
+		above. */
+		__asm volatile("cpsie i" ::: "memory");
+	}
+	else
+	{
+		/* Set the new reload value. */
+		//portNVIC_SYSTICK_LOAD_REG = ulReloadValue;
+		setReloadValueTimer1(ulReloadValue);
+
+		/* Clear the SysTick count flag and set the count value back to
+		zero. */
+		//portNVIC_SYSTICK_CURRENT_VALUE_REG = 0UL;
+		setCounterToZeroTimer1();
+
+		/* Restart SysTick. */
+		resetTIMER1();
+
+		/* Sleep until something happens.  configPRE_SLEEP_PROCESSING() can
+		set its parameter to 0 to indicate that its implementation contains
+		its own wait for interrupt or wait for event instruction, and so wfi
+		should not be executed again.  However, the original expected idle
+		time variable must remain unmodified, so a copy is taken. */
+		xModifiableIdleTime = xExpectedIdleTime;
+		configPRE_SLEEP_PROCESSING(xModifiableIdleTime);
+		if (xModifiableIdleTime > 0)
+		{
+			__asm volatile("dsb" ::: "memory");
+			__asm volatile("wfi");
+			__asm volatile("isb");
+		}
+		configPOST_SLEEP_PROCESSING(xExpectedIdleTime);
+
+		/* Re-enable interrupts to allow the interrupt that brought the MCU
+		out of sleep mode to execute immediately.  see comments above
+		__disable_interrupt() call above. */
+		__asm volatile("cpsie i" ::: "memory");
+		__asm volatile("dsb");
+		__asm volatile("isb");
+
+		/* Disable interrupts again because the clock is about to be stopped
+		and interrupts that execute while the clock is stopped will increase
+		any slippage between the time maintained by the RTOS and calendar
+		time. */
+		__asm volatile("cpsid i" ::: "memory");
+		__asm volatile("dsb");
+		__asm volatile("isb");
+
+		/* Disable the SysTick clock without reading the
+		portNVIC_SYSTICK_CTRL_REG register to ensure the
+		portNVIC_SYSTICK_COUNT_FLAG_BIT is not cleared if it is set.  Again,
+		the time the SysTick is stopped for is accounted for as best it can
+		be, but using the tickless mode will inevitably result in some tiny
+		drift of the time maintained by the kernel with respect to calendar
+		time*/
+		portNVIC_SYSTICK_CTRL_REG = (portNVIC_SYSTICK_CLK_BIT | portNVIC_SYSTICK_INT_BIT);
+
+		/* Determine if the SysTick clock has already counted to zero and
+		been set back to the current reload value (the reload back being
+		correct for the entire expected idle time) or if the SysTick is yet
+		to count to zero (in which case an interrupt other than the SysTick
+		must have brought the system out of sleep mode). */
+		if ((portNVIC_SYSTICK_CTRL_REG & portNVIC_SYSTICK_COUNT_FLAG_BIT) != 0)
+		{
+			uint32_t ulCalculatedLoadValue;
+
+			/* The tick interrupt is already pending, and the SysTick count
+			reloaded with ulReloadValue.  Reset the
+			portNVIC_SYSTICK_LOAD_REG with whatever remains of this tick
+			period. */
+			ulCalculatedLoadValue = (ulTimerCountsForOneTick - 1UL) - (ulReloadValue - portNVIC_SYSTICK_CURRENT_VALUE_REG);
+
+			/* Don't allow a tiny value, or values that have somehow
+			underflowed because the post sleep hook did something
+			that took too long. */
+			if ((ulCalculatedLoadValue < ulStoppedTimerCompensation) || (ulCalculatedLoadValue > ulTimerCountsForOneTick))
+			{
+				ulCalculatedLoadValue = (ulTimerCountsForOneTick - 1UL);
+			}
+
+			portNVIC_SYSTICK_LOAD_REG = ulCalculatedLoadValue;
+
+			/* As the pending tick will be processed as soon as this
+			function exits, the tick value maintained by the tick is stepped
+			forward by one less than the time spent waiting. */
+			ulCompleteTickPeriods = xExpectedIdleTime - 1UL;
+		}
+		else
+		{
+			/* Something other than the tick interrupt ended the sleep.
+			Work out how long the sleep lasted rounded to complete tick
+			periods (not the ulReload value which accounted for part
+			ticks). */
+			ulCompletedSysTickDecrements = (xExpectedIdleTime * ulTimerCountsForOneTick) - portNVIC_SYSTICK_CURRENT_VALUE_REG;
+
+			/* How many complete tick periods passed while the processor
+			was waiting? */
+			ulCompleteTickPeriods = ulCompletedSysTickDecrements / ulTimerCountsForOneTick;
+
+			/* The reload value is set to whatever fraction of a single tick
+			period remains. */
+			portNVIC_SYSTICK_LOAD_REG = ((ulCompleteTickPeriods + 1UL) * ulTimerCountsForOneTick) - ulCompletedSysTickDecrements;
+		}
+
+		/* Restart SysTick so it runs from portNVIC_SYSTICK_LOAD_REG
+		again, then set portNVIC_SYSTICK_LOAD_REG back to its standard
+		value. */
+		portNVIC_SYSTICK_CURRENT_VALUE_REG = 0UL;
+		portNVIC_SYSTICK_CTRL_REG |= portNVIC_SYSTICK_ENABLE_BIT;
+		vTaskStepTick(ulCompleteTickPeriods);
+		portNVIC_SYSTICK_LOAD_REG = ulTimerCountsForOneTick - 1UL;
+
+		/* Exit with interrupts enabled. */
+		__asm volatile("cpsie i" ::: "memory");
+	}
 }
