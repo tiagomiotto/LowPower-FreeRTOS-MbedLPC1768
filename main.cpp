@@ -19,6 +19,9 @@ DigitalOut myled2(LED2);
 DigitalOut myled4(LED4);
 
 
+
+#define ld2         18 // P2_1
+
 /* TIMER REGISTERS */
 #define T0TCR      0x40004004
 #define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
@@ -164,7 +167,7 @@ int main()
     initRTC(now);
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
-
+    //LPC_GPIO1->FIODIR = (1<<ld2);
     //RTC::alarm(&alarmFunction, t2);
 
     //pc.printf("bbbb %d\n", tee-1);
@@ -335,17 +338,17 @@ void vTask2(void * pvParameters)
         //     }    
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
-        if (contador != 0 && contador%3==0 && currentFrequencyLevel<=4) {
-            pc.fsync();
-            currentFrequencyLevel++;
-            setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
-            frequencyChanged=true;
-            Serial pc(USBTX, USBRX);
+        // if (contador != 0 && contador%3==0 && currentFrequencyLevel<=4) {
+        //     pc.fsync();
+        //     currentFrequencyLevel++;
+        //     setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
+        //     frequencyChanged=true;
+        //     Serial pc(USBTX, USBRX);
             
-        }
+        // }
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-
+        LPC_GPIO1->FIOPIN ^= (1<<ld2);
     }
 }
 
@@ -366,7 +369,7 @@ void vApplicationIdleHook(void)
     }
 
 
-    Sleep();
+    //Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
 
     //DeepSleep();

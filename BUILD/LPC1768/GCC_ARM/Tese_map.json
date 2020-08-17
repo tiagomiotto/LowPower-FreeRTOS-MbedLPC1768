@@ -3,22 +3,22 @@
         "module": "BUILD\\LPC1768", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": 24, 
-            ".bss": 16968, 
+            ".text-delta": 4, 
+            ".bss": 17017, 
             ".data": 12, 
-            ".bss-delta": 8, 
-            ".text": 4227
+            ".bss-delta": 0, 
+            ".text": 7007
         }
     }, 
     {
         "module": "[fill]", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": 8, 
-            ".bss": 24, 
+            ".text-delta": -4, 
+            ".bss": 23, 
             ".data": 12, 
             ".bss-delta": 0, 
-            ".text": 644
+            ".text": 648
         }
     }, 
     {
@@ -84,15 +84,15 @@
             ".bss": 357, 
             ".data": 264, 
             ".bss-delta": 0, 
-            ".text": 7614
+            ".text": 7430
         }
     }, 
     {
         "summary": {
-            "static_ram": 20484, 
-            "total_flash_delta": 32, 
-            "static_ram_delta": 8, 
-            "total_flash": 60714
+            "static_ram": 20532, 
+            "total_flash_delta": 0, 
+            "static_ram_delta": 0, 
+            "total_flash": 63314
         }
     }
 ]
