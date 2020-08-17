@@ -97,6 +97,8 @@ demo, or 0 to run the more comprehensive test and demo application. */
 
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
+
+
 extern volatile unsigned long ulHighFrequencyTimerTicks;
 extern void vConfigureTimerForRunTimeStats( void );
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
