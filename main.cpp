@@ -267,7 +267,7 @@ void vTask3(void * pvParameters)
 
 void vTask2(void * pvParameters)
 {
-    const TickType_t xDelay = 5000 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = 2000 / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     long begin, end;
     struct RTC_DATA now;
@@ -277,25 +277,31 @@ void vTask2(void * pvParameters)
 
     for (;; ) {
         deadline2= xLastWakeTime + xDelay;
+        #ifdef DEBUG
         myled4=1;
+        #endif
         int cycles = 1012000; //Takes around 210ms at 96Mhz
 
         #ifdef cycleCounter
         KIN1_ResetCycleCounter(); /* reset cycle counter */
         KIN1_EnableCycleCounter(); /* start counting */
         n= fibonnacciCalculation(cycles);
+        #ifdef DEBUG
         end = KIN1_GetCycleCounter(); /* get cycle counter */
         double timeInMs= end/(SystemCoreClock/1000.0);
         pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
             "%lf ms \n", end, SystemCoreClock, n, timeInMs);
+        #endif
 
         #else
         begin = xTaskGetTickCount();
         n= fibonnacciCalculation(cycles);
         end = xTaskGetTickCount();
+        #ifdef DEBUG
         double timeInMs= (end-begin)*portTICK_PERIOD_MS;
         pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
-            "%lf ms\n", end-begin, SystemCoreClock, n, timeInMs);
+            "%lf, %ld prescalar, %ld Tick Count ms\n", end-begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR , end );
+        #endif
         #endif
 
         //pc.printf(" \n");
@@ -307,6 +313,7 @@ void vTask2(void * pvParameters)
         /* Read Time */
         //PrintTaskInfo();
         now = getTime();
+        
         //pc.printf("Hello world %d\n", contador);
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         //pc.printf("%d ms,%d ticks, %d last, %d deadline1, %d deadline2\n",cycles,xTaskGetTickCount(), xLastWakeTime, deadline1,deadline2);
@@ -348,7 +355,7 @@ void vTask2(void * pvParameters)
         // }
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-        LPC_GPIO1->FIOPIN ^= (1<<ld2);
+        //LPC_GPIO1->FIOPIN ^= (1<<ld2);
     }
 }
 
