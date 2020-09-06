@@ -10,6 +10,7 @@
         "unordered_map": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "digitalout.h": "c"
+        "digitalout.h": "c",
+        "lpc1768_low_power_tick_management.h": "c"
     }
 }

@@ -3,22 +3,22 @@
         "module": "BUILD\\LPC1768", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": -64, 
+            ".text-delta": 492, 
             ".bss": 16972, 
             ".data": 12, 
-            ".bss-delta": 0, 
-            ".text": 4546
+            ".bss-delta": 4, 
+            ".text": 4738
         }
     }, 
     {
         "module": "[fill]", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": 0, 
+            ".text-delta": 4, 
             ".bss": 24, 
             ".data": 12, 
             ".bss-delta": 0, 
-            ".text": 653
+            ".text": 643
         }
     }, 
     {
@@ -29,7 +29,7 @@
             ".bss": 89, 
             ".data": 2472, 
             ".bss-delta": 0, 
-            ".text": 36068
+            ".text": 27815
         }
     }, 
     {
@@ -40,7 +40,7 @@
             ".bss": 0, 
             ".data": 0, 
             ".bss-delta": 0, 
-            ".text": 3152
+            ".text": 3168
         }
     }, 
     {
@@ -62,18 +62,7 @@
             ".bss": 28, 
             ".data": 12, 
             ".bss-delta": 0, 
-            ".text": 216
-        }
-    }, 
-    {
-        "module": "[lib]\\nosys.a", 
-        "size": {
-            ".data-delta": 0, 
-            ".text-delta": 0, 
-            ".bss": 0, 
-            ".data": 0, 
-            ".bss-delta": 0, 
-            ".text": 32
+            ".text": 252
         }
     }, 
     {
@@ -84,15 +73,15 @@
             ".bss": 357, 
             ".data": 264, 
             ".bss-delta": 0, 
-            ".text": 7430
+            ".text": 7614
         }
     }, 
     {
         "summary": {
             "static_ram": 20488, 
-            "total_flash_delta": -64, 
-            "static_ram_delta": 0, 
-            "total_flash": 60858
+            "total_flash_delta": 496, 
+            "static_ram_delta": 4, 
+            "total_flash": 52991
         }
     }
 ]

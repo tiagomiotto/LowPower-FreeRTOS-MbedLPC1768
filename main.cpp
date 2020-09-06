@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "PowerControl.h"
+#include "EthernetPowerControl.h"
 #include "ClockControl.h"
 #include "calculations.h"
 #include "RTC.h"
@@ -97,25 +98,6 @@ void alarmFunction(void)
 #define SBIT_CTCRST    1    /* RTC Clock Reset */
 #define SBIT_CCALEN    4    /* RTC Calibration counter enable */
 
-class Watchdog
-{
-public:
-    // Load timeout value in watchdog timer and enable
-    void kick(float s)
-    {
-        LPC_WDT->WDCLKSEL = 0x02;               // Set CLK src to RTC for DeepSleep wakeup
-        LPC_WDT->WDTC = (s/4.0)*32768;
-        LPC_WDT->WDMOD = 0x3;                   // Enabled and Reset
-        kick();
-    }
-    // "kick" or "feed" the dog - reset the watchdog timer
-    // by writing this required bit pattern
-    void kick()
-    {
-        LPC_WDT->WDFEED = 0xAA;
-        LPC_WDT->WDFEED = 0x55;
-    }
-};
 
 int main()
 {
@@ -167,6 +149,7 @@ int main()
     initRTC(now);
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
+    PHY_PowerDown();
     //LPC_GPIO1->FIODIR = (1<<ld2);
     //RTC::alarm(&alarmFunction, t2);
 
@@ -342,17 +325,18 @@ void vTask2(void * pvParameters)
         //             setSystemFrequency(2+frequencyDivider,0,36, 1);       
         //             Serial pc2(USBTX, USBRX); 
         //         }
+
         //     }    
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
-        // if (contador != 0 && contador%3==0 && currentFrequencyLevel<=4) {
-        //     pc.fsync();
-        //     currentFrequencyLevel++;
-        //     setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
-        //     frequencyChanged=true;
-        //     Serial pc(USBTX, USBRX);
+        if (contador != 0 && contador%5==0 && currentFrequencyLevel<=6) {
+            pc.fsync();
+            currentFrequencyLevel++;
+            setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
+            frequencyChanged=true;
+            Serial pc(USBTX, USBRX);
             
-        // }
+        }
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);
@@ -376,7 +360,7 @@ void vApplicationIdleHook(void)
     }
 
 
-    //Sleep();
+    Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
 
     //DeepSleep();

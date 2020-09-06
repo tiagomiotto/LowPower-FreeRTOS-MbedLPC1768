@@ -31,6 +31,7 @@
 /* FreeRTOS includes. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
 
 /* User defined Variables */
 #include <stdbool.h>
@@ -133,26 +134,27 @@ void dynamicFrequencySysTickHandler(void)
 	if (frequencyChanged)
 	{
 		periodicTickIncrementCount = 0;
+		updatePrescalerTIMER1();
 		frequencyChanged = false;
 	}
 
-	short extraTicks = staticTickIncrement[currentFrequencyLevel];
-	if (periodicTickIncrementCount == periodicTickIncrement[currentFrequencyLevel] && periodicTickIncrement[currentFrequencyLevel] != 0)
-	{
-		extraTicks++;
-		periodicTickIncrementCount = 0;
-	}
+	// short extraTicks = staticTickIncrement[currentFrequencyLevel];
+	// if (periodicTickIncrementCount == periodicTickIncrement[currentFrequencyLevel] && periodicTickIncrement[currentFrequencyLevel] != 0)
+	// {
+	// 	extraTicks++;
+	// 	periodicTickIncrementCount = 0;
+	// }
 
-	for (int i = 0; i < extraTicks; i++)
-	{
-		/* Increment the RTOS tick. */
-		if (xTaskIncrementTick() != pdFALSE)
-		{
-			/* A context switch is required.  Context switching is performed in
-			the PendSV interrupt.  Pend the PendSV interrupt. */
-			portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
-		}
-	}
+	// for (int i = 0; i < extraTicks; i++)
+	// {
+	// 	/* Increment the RTOS tick. */
+	// 	if (xTaskIncrementTick() != pdFALSE)
+	// 	{
+	// 		/* A context switch is required.  Context switching is performed in
+	// 		the PendSV interrupt.  Pend the PendSV interrupt. */
+	// 		portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
+	// 	}
+	// }
 
 	periodicTickIncrementCount++;
 
@@ -213,6 +215,10 @@ uint32_t getCounterTIMER1(void)
 	return LPC_TIM1->TC;
 }
 
+void updatePrescalerTIMER1(void)
+{
+	LPC_TIM1->PR = getPrescalarFor100Us(PCLK_TIMER1);	
+}
 void TIMER1_IRQHandler(void)
 {
 	LPC_TIM1->IR |= (1 << 0); //Clear MR0 Interrupt flag

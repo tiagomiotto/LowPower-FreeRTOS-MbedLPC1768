@@ -78,7 +78,7 @@ extern uint32_t SystemCoreClock;
 demo, or 0 to run the more comprehensive test and demo application. */
 #define configDYNAMIC_FREQUENCY_LOW_POWER_MODE 1
 
-#define DEBUG 1
+//#define DEBUG 1
 
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
@@ -198,5 +198,5 @@ standard names. */
 
 #endif
 
-#define DVFS_ON 1
+
 #endif /* FREERTOS_CONFIG_H */
