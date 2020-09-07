@@ -10,6 +10,10 @@
 #include "TARGET_LPC1768_N/LPC17xx.h"
 #include "lpc1768_rtc.h"
 
+#include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
+
+#include"TaskConfiguration.h"
+
 #include "cycleCounter.h"
 
 //#define cycleCounter 1
@@ -30,36 +34,10 @@ DigitalOut myled4(LED4);
 #define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
 
 
-/*
- * The tick hook function.  This compensates
- * the tick count to compensate for frequency changes
- */
-const uint8_t mValues[12] = {36,33,30,27,24,18,12,9,6,3};
-const int frequencyLevels[]={96, 88, 80, 72, 64, 48, 32, 24, 16, 8 };
-const int staticTickIncrement[]={ 0, 0, 0, 0, 0, 1, 2, 3, 5, 11 };
-const int periodicTickIncrement[]={0, 11, 5, 3, 2, 0, 0, 0, 0, 0 };
-volatile int currentFrequencyLevel = 0;
-volatile short periodicTickIncrementCount= 0;
-volatile bool frequencyChanged = false;
-const short availableFrequencyLevels = 10;
 
 
-/* Priorities at which the tasks are created. */
-#define mainQUEUE_RECEIVE_TASK_PRIORITY     ( tskIDLE_PRIORITY + 2 )
-#define mainQUEUE_SEND_TASK_PRIORITY        ( tskIDLE_PRIORITY + 1 )
 
-/* The rate at which data is sent to the queue.  The times are converted from
-milliseconds to ticks using the pdMS_TO_TICKS() macro. */
-#define mainTASK_SEND_FREQUENCY_MS          pdMS_TO_TICKS( 200UL )
-#define mainTIMER_SEND_FREQUENCY_MS         pdMS_TO_TICKS( 2000UL )
 
-/* The number of items the queue can hold at once. */
-#define mainQUEUE_LENGTH                    ( 2 )
-
-/* The values sent to the queue receive task from the queue send task and the
-queue send software timer respectively. */
-#define mainVALUE_SENT_FROM_TASK            ( 100UL )
-#define mainVALUE_SENT_FROM_TIMER           ( 200UL )
 
 /*-----------------------------------------------------------*/
 void vTask1(void * pvParameters);
@@ -85,13 +63,6 @@ char ptrTaskList[500]={ 0 };
 static void PrintTaskInfo();
 //Changed min stack size to 300
 
-void alarmFunction(void)
-{
-    if (myled2==0)myled2=1;
-    else myled2=0;
-    //RTC::alarm(&alarmFunction, t2);
-    //error("Not most useful alarm function");
-}
 
 /* bit position of CCR register */
 #define SBIT_CLKEN     0    /* RTC Clock Enable*/
@@ -101,7 +72,12 @@ void alarmFunction(void)
 
 int main()
 {
+ int periods[3] = {8,10,14};
+ int compute[3] = {1,3,1};
 
+ int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
+    pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+ 
 
     //int result;
 //    Watchdog wdt;
@@ -159,13 +135,13 @@ int main()
     /* Start the two tasks as described in the comments at the top of this
     file. */
     //    xTaskCreate( vTask1,           /* The function that implements the task. */
-    //                 "Rx",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
-    //                 configMINIMAL_STACK_SIZE,       /* The size of the stack to allocate to the task. */
+    //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
+    //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
     //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
-    //                 mainQUEUE_SEND_TASK_PRIORITY,/* The priority assigned to the task. */
+    //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
     //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    xTaskCreate(vTask2, "TX", configMINIMAL_STACK_SIZE*10, NULL, mainQUEUE_RECEIVE_TASK_PRIORITY, NULL);
+    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, NULL, mainTASK2_PRIORITY, NULL);
 
 
 
@@ -183,34 +159,45 @@ int main()
 volatile unsigned long x = 0, y = 0;
 void vTask1(void * pvParameters)
 {
-    const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = mainTASK1_PERIOD / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
+    long begin, end;
     struct RTC_DATA now;
-
     xLastWakeTime = xTaskGetTickCount();
+    srand(time(NULL));
+    long n;
+    int cycles = 1012000/2; //Takes around 105ms at 96Mhz
+
     for (;; ) {
-        deadline1= xLastWakeTime + xDelay;
-        if (led==0) {
-            myled=1;
-            led=1;
-        }
-        else {
-            myled1=1;
-            led=0;
-        }
+        deadline2= xLastWakeTime + xDelay;
+        #ifdef DEBUG
+        myled4=1;
+        #endif
 
-        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
-            //myled2=1;
-            contador++;
+        #ifdef cycleCounter
+        KIN1_ResetCycleCounter(); /* reset cycle counter */
+        KIN1_EnableCycleCounter(); /* start counting */
+        n= fibonnacciCalculation(cycles);
+        #ifdef DEBUG
+        end = KIN1_GetCycleCounter(); /* get cycle counter */
+        double timeInMs= end/(SystemCoreClock/1000.0);
+        pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
+            "%lf ms \n", end, SystemCoreClock, n, timeInMs);
+        #endif
 
-        }
-        now = getTime();
+        #else
+        begin = xTaskGetTickCount();
+        n= fibonnacciCalculation(cycles);
+        end = xTaskGetTickCount();
+        #ifdef DEBUG
+        double timeInMs= (end-begin)*portTICK_PERIOD_MS;
+        pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+            "%lf, %ld prescalar, %ld Tick Count ms\n", end-begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR , end );
+        #endif
+        #endif
 
-        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-        //myled =0;
-        //vTaskDelay( xDelay );
-
+        //LPC_GPIO1->FIOPIN ^= (1<<ld2);
     }
 }
 
@@ -250,20 +237,22 @@ void vTask3(void * pvParameters)
 
 void vTask2(void * pvParameters)
 {
-    const TickType_t xDelay = 2000 / portTICK_PERIOD_MS;
+    const TickType_t xDelay = mainTASK2_PERIOD / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     long begin, end;
     struct RTC_DATA now;
     xLastWakeTime = xTaskGetTickCount();
     srand(time(NULL));
     long n;
+    int cycles = 1012000; //Takes around 210ms at 96Mhz
 
     for (;; ) {
         deadline2= xLastWakeTime + xDelay;
+        
         #ifdef DEBUG
         myled4=1;
         #endif
-        int cycles = 1012000; //Takes around 210ms at 96Mhz
+        
 
         #ifdef cycleCounter
         KIN1_ResetCycleCounter(); /* reset cycle counter */
@@ -295,7 +284,7 @@ void vTask2(void * pvParameters)
         //pc.printf("%s", stats);
         /* Read Time */
         //PrintTaskInfo();
-        now = getTime();
+        //now = getTime();
         
         //pc.printf("Hello world %d\n", contador);
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
@@ -313,20 +302,7 @@ void vTask2(void * pvParameters)
 //                }
 //            }
 //        }
-        // if(contador%5==0){
-        //     if(frequencyDivider<3){
-        //         setSystemFrequency(2+frequencyDivider,0,36, 1);       
-        //             Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
 
-        //             frequencyDivider++;
-        //         }
-        //         else{
-        //             frequencyDivider=1;
-        //             setSystemFrequency(2+frequencyDivider,0,36, 1);       
-        //             Serial pc2(USBTX, USBRX); 
-        //         }
-
-        //     }    
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
         if (contador != 0 && contador%5==0 && currentFrequencyLevel<=6) {

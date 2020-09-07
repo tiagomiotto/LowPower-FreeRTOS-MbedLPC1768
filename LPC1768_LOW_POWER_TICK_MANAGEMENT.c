@@ -32,6 +32,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
+#include "math.h"
 
 /* User defined Variables */
 #include <stdbool.h>
@@ -217,7 +218,7 @@ uint32_t getCounterTIMER1(void)
 
 void updatePrescalerTIMER1(void)
 {
-	LPC_TIM1->PR = getPrescalarFor100Us(PCLK_TIMER1);	
+	LPC_TIM1->PR = getPrescalarFor100Us(PCLK_TIMER1);
 }
 void TIMER1_IRQHandler(void)
 {
@@ -431,3 +432,88 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 }
 
 #endif
+
+/* Mode 0: RM
+	Mode 1 EDF*/
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
+												   int* taskPeriods, int* taskWorstCaseComputeTime, int mode)
+{
+
+	float alphaToTest =0.0f;
+	bool validAlpha = true;
+	int i = 0;
+
+	/* Even if it fails in the max frequency, will return 0 and operate at max frequency
+		If it is valid through all levels the second condition will act and stop the loop*/
+	if (mode == 0) //RM
+	{
+		while (validAlpha && i < availableFrequencyLevels)
+		{
+			alphaToTest = (frequencyLevels[i] *1.0f) / (frequencyLevels[0] *1.0f);
+			validAlpha = staticVoltageScalingRM_Test(numberOfTasks, taskPeriods, taskWorstCaseComputeTime, alphaToTest);
+			if(validAlpha) i++;
+		}
+		return i-1;
+	}
+
+	if (mode == 1) //EDF
+	{
+		while (validAlpha && i < availableFrequencyLevels)
+		{
+			alphaToTest = (frequencyLevels[i] *1.0f) / (frequencyLevels[0] *1.0f);
+			validAlpha = staticVoltageScalingEDF_Test(numberOfTasks, taskPeriods, taskWorstCaseComputeTime, alphaToTest);
+			if(validAlpha) i++;
+		}
+		return i-1;
+	}
+	return 0;
+}
+
+bool staticVoltageScalingRM_Test(int numberOfTasks,
+								 int *taskPeriods, int *taskWorstCaseComputeTime, float alpha)
+{
+
+	int currentTaskInTest = 0;
+	float computeTimeSum = 0;
+
+	while (1)
+	{
+		for (int i = 0; i < currentTaskInTest + 1; i++)
+		{
+			computeTimeSum += ceil((taskPeriods[currentTaskInTest] / 1.0f)/(taskPeriods[i] / 1.0f)) * taskWorstCaseComputeTime[i];
+		}
+
+		if (alpha * taskPeriods[currentTaskInTest] >= computeTimeSum)
+		{
+
+			if (currentTaskInTest + 1 == numberOfTasks)
+				return true; //Alpha is valid and deadlines are not violated
+
+			/* Reset the sum and test the next Task*/
+			computeTimeSum = 0;
+			currentTaskInTest++;
+		}
+		else
+			return false;
+	}
+}
+
+bool staticVoltageScalingEDF_Test(int numberOfTasks,
+								  int *taskPeriods, int *taskWorstCaseComputeTime, float alpha)
+{
+
+	float computeTimeSum = 0;
+
+	for (int i = 0; i < numberOfTasks; i++)
+	{
+		computeTimeSum += (taskWorstCaseComputeTime[i]*1.0f) / (taskPeriods[i]*1.0f);
+	}
+
+	if (alpha >= computeTimeSum)
+		return true;
+	return false;
+}

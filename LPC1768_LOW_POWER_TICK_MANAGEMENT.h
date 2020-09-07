@@ -28,4 +28,15 @@ void TIMER1_IRQHandler(void);
 /* Courtesy of https://www.exploreembedded.com/wiki/LPC1768:_Timers */
 unsigned int getPrescalarFor100Us(uint8_t timerPclkBit);
 
+#ifdef __cplusplus
+extern "C"
 #endif
+int staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
+												   int* taskPeriods, int* taskWorstCaseComputeTime, int mode);
+bool staticVoltageScalingRM_Test(int numberOfTasks,
+								 int *taskPeriods, int *taskWorstCaseComputeTime, float alpha);                                                 
+
+bool staticVoltageScalingEDF_Test(int numberOfTasks,
+								  int *taskPeriods, int *taskWorstCaseComputeTime, float alpha);
+#endif
+
