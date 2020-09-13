@@ -31,6 +31,26 @@ priority setter */
 #define mainTASK3_PRIORITY (tskIDLE_PRIORITY + 1)
 
 /* Period of execution of the Tasks in mS */
+/* TASKS HAVE TO BE SORTED BY PERIOD */
 #define mainTASK1_PERIOD 500
 #define mainTASK2_PERIOD 1000
 #define mainTASK3_PERIOD 1500
+#if mainTASK1_PERIOD > mainTASK2_PERIOD || mainTASK1_PERIOD > mainTASK3_PERIOD || mainTASK2_PERIOD > mainTASK3_PERIOD || 
+#error TASKS HAVE TO BE SORTED BY PERIOD
+#endif
+
+int mainTaskPeriods[3] = {mainTASK1_PERIOD,mainTASK2_PERIOD,mainTASK3_PERIOD};
+
+/* Worst case of execution of the Tasks in mS */
+#define mainTASK1_WORSTCASE 210
+#define mainTASK2_WORSTCASE 420
+#define mainTASK3_WORSTCASE 660
+
+int mainWorstCaseComputeTime[3] = {mainTASK1_WORSTCASE,mainTASK2_WORSTCASE,mainTASK3_WORSTCASE};
+
+/* To be used by the tasks to update the in which Tick they will be ready*/
+int deadlineTask1 = mainTASK1_PERIOD;
+int deadlineTask2 = mainTASK2_PERIOD;
+int deadlineTask3 = mainTASK3_PERIOD;
+
+int* deadlines[3] = {&deadlineTask1,&deadlineTask2,&deadlineTask3};

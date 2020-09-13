@@ -433,17 +433,20 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 
 #endif
 
-/* Mode 0: RM
+/* Static voltage Scak=ling Implementation
+** 
+** Mode 0: RM
 	Mode 1 EDF*/
 
 #ifdef __cplusplus
 extern "C"
 #endif
-int staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
-												   int* taskPeriods, int* taskWorstCaseComputeTime, int mode)
+	int
+	staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
+											   int *taskPeriods, int *taskWorstCaseComputeTime, int mode)
 {
 
-	float alphaToTest =0.0f;
+	float alphaToTest = 0.0f;
 	bool validAlpha = true;
 	int i = 0;
 
@@ -453,22 +456,24 @@ int staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
 	{
 		while (validAlpha && i < availableFrequencyLevels)
 		{
-			alphaToTest = (frequencyLevels[i] *1.0f) / (frequencyLevels[0] *1.0f);
+			alphaToTest = (frequencyLevels[i] * 1.0f) / (frequencyLevels[0] * 1.0f);
 			validAlpha = staticVoltageScalingRM_Test(numberOfTasks, taskPeriods, taskWorstCaseComputeTime, alphaToTest);
-			if(validAlpha) i++;
+			if (validAlpha)
+				i++;
 		}
-		return i-1;
+		return i - 1;
 	}
 
 	if (mode == 1) //EDF
 	{
 		while (validAlpha && i < availableFrequencyLevels)
 		{
-			alphaToTest = (frequencyLevels[i] *1.0f) / (frequencyLevels[0] *1.0f);
+			alphaToTest = (frequencyLevels[i] * 1.0f) / (frequencyLevels[0] * 1.0f);
 			validAlpha = staticVoltageScalingEDF_Test(numberOfTasks, taskPeriods, taskWorstCaseComputeTime, alphaToTest);
-			if(validAlpha) i++;
+			if (validAlpha)
+				i++;
 		}
-		return i-1;
+		return i - 1;
 	}
 	return 0;
 }
@@ -484,7 +489,7 @@ bool staticVoltageScalingRM_Test(int numberOfTasks,
 	{
 		for (int i = 0; i < currentTaskInTest + 1; i++)
 		{
-			computeTimeSum += ceil((taskPeriods[currentTaskInTest] / 1.0f)/(taskPeriods[i] / 1.0f)) * taskWorstCaseComputeTime[i];
+			computeTimeSum += ceil((taskPeriods[currentTaskInTest] / 1.0f) / (taskPeriods[i] / 1.0f)) * taskWorstCaseComputeTime[i];
 		}
 
 		if (alpha * taskPeriods[currentTaskInTest] >= computeTimeSum)
@@ -510,10 +515,92 @@ bool staticVoltageScalingEDF_Test(int numberOfTasks,
 
 	for (int i = 0; i < numberOfTasks; i++)
 	{
-		computeTimeSum += (taskWorstCaseComputeTime[i]*1.0f) / (taskPeriods[i]*1.0f);
+		computeTimeSum += (taskWorstCaseComputeTime[i] * 1.0f) / (taskPeriods[i] * 1.0f);
 	}
 
 	if (alpha >= computeTimeSum)
 		return true;
 	return false;
+}
+
+/* Deadlines array has to be an array of pointers, to allow for the tasks to change the values inside the array
+** during execution by changing the value of the pointer directly, intead of accessing the array
+**
+** To note: This function is not optimized for a huge amount of tasks, but having alarge amount of tasks 
+** would break all the algorithms, therefore optimization here is not that important
+*/
+static int findNextDeadline(int *deadlinesArray, int numberOfTasks)
+{
+	int nextDeadline = *dealinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
+	for (int i = 1; i < numberOfTasks; i++)
+	{
+		if (nextDeadline > *dealinesArray[i])
+			nextDealine = *dealinesArray[i];
+	}
+	return nextDeadline;
+}
+
+/* Cycle Conserving DVS Implementation
+   Only Implemented for RM
+*/
+
+#if numberOFTASKS != 3
+#error Correct here to increase the number of Tasks, as this was a POC aimed at a system with 3 tasks
+#endif
+
+int c_left1, c_left2, c_left3;
+int c_lefti[3] = {*c_left1, *c_left2, *c_left3};
+
+int d_1 = 0, d_2 = 0, d_3 = 0;
+int d_i[3] = {*d_1, *d_2, *d_3};
+
+int frequencyChosenSVS = 96;
+
+void setupCycleConservingDVS(int numberOfTasks,
+							 int *taskPeriods, int *taskWorstCaseComputeTime)
+{
+	frequencyChosen = staticVoltageScalingFrequencyLevelSelector(numberOfTasks,
+																 taskPeriods, taskWorstCaseComputeTime);
+	for (int i = 0; i < numberOfTasks; i++)
+	{
+		*c_lefti[i] = taskWorstCaseComputeTime[i];
+	}
+}
+
+int cycleConservingDVSFrequencySelector(int currentTick)
+{
+	int maxTicksUntilNextDeadline = findNextDeadline(deadlines, numberOfTasks);
+}
+
+void cycleConservingDVSTaskReady(int taskNumber, int currentTick)
+{
+	*c_lefti[taskNumber] = mainWorstCaseComputeTime[taskNumber];
+	int s_m = findNextDeadline(deadlines, numberOfTasks);
+	int s_j = ceil(s_m * frequencyChosenSVS / frequencyLevels[0]);
+	cycleConservingDVSAllocateCycles(s_j);
+	cycleConservingDVSFrequencySelector(currentTick);
+}
+
+void cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
+{
+	*c_lefti[taskNumber] = 0;
+	*d_i[taskNumber] = 0;
+	cycleConservingDVSFrequencySelector(currentTick);
+}
+
+void cycleConservingDVSAllocateCycles(int k)
+{
+	for (int i = 0; i < numberOFTASKS; i++)
+	{
+		if (*c_lefti[i] < k)
+		{
+			*d_i[i] = *c_lefti[i];
+			k = k - *c_lefti[i];
+		}
+		else
+		{
+			*d_i[i] = k;
+			k = 0;
+		}
+	}
 }

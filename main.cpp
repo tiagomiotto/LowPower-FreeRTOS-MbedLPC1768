@@ -76,8 +76,13 @@ int main()
  int compute[3] = {1,3,1};
 
  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
-    pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+
+pc.printf("RM level %d : %d MHz \n", min(deadlines),  *deadlines[1]);
+
+pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
  
+
 
     //int result;
 //    Watchdog wdt;
@@ -141,7 +146,7 @@ int main()
     //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
     //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, NULL, mainTASK2_PRIORITY, NULL);
+    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
 
 
@@ -240,14 +245,14 @@ void vTask2(void * pvParameters)
     const TickType_t xDelay = mainTASK2_PERIOD / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
     long begin, end;
-    struct RTC_DATA now;
+    //int* taskDeadline = (int*) pvParameters[0];
     xLastWakeTime = xTaskGetTickCount();
     srand(time(NULL));
     long n;
     int cycles = 1012000; //Takes around 210ms at 96Mhz
 
     for (;; ) {
-        deadline2= xLastWakeTime + xDelay;
+        //*taskDeadline= xLastWakeTime + xDelay;
         
         #ifdef DEBUG
         myled4=1;
@@ -305,14 +310,14 @@ void vTask2(void * pvParameters)
 
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
-        if (contador != 0 && contador%5==0 && currentFrequencyLevel<=6) {
-            pc.fsync();
-            currentFrequencyLevel++;
-            setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
-            frequencyChanged=true;
-            Serial pc(USBTX, USBRX);
+        // if (contador != 0 && contador%5==0 && currentFrequencyLevel<=6) {
+        //     pc.fsync();
+        //     currentFrequencyLevel++;
+        //     setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
+        //     frequencyChanged=true;
+        //     Serial pc(USBTX, USBRX);
             
-        }
+        // }
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);

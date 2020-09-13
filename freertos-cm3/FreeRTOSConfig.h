@@ -104,7 +104,7 @@ extern void vConfigureTimerForRunTimeStats(void);
 #define configUSE_IDLE_HOOK 1
 #define configUSE_TICK_HOOK 0
 #define configCPU_CLOCK_HZ (SystemCoreClock)
-#define configTICK_RATE_HZ ((TickType_t)100)
+#define configTICK_RATE_HZ ((TickType_t)10)
 #define configMAX_PRIORITIES (5)
 #define configMINIMAL_STACK_SIZE ((unsigned short)128)
 #define configTOTAL_HEAP_SIZE ((size_t)(16 * 1024))
@@ -198,5 +198,6 @@ standard names. */
 
 #endif
 
+#define numberOFTASKS 3
 
 #endif /* FREERTOS_CONFIG_H */
