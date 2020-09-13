@@ -78,7 +78,6 @@ int main()
  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
 pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
 
-pc.printf("RM level %d : %d MHz \n", min(deadlines),  *deadlines[1]);
 
 pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
  

@@ -35,18 +35,20 @@ priority setter */
 #define mainTASK1_PERIOD 500
 #define mainTASK2_PERIOD 1000
 #define mainTASK3_PERIOD 1500
-#if mainTASK1_PERIOD > mainTASK2_PERIOD || mainTASK1_PERIOD > mainTASK3_PERIOD || mainTASK2_PERIOD > mainTASK3_PERIOD || 
+
+#if mainTASK1_PERIOD > mainTASK2_PERIOD || mainTASK1_PERIOD > mainTASK3_PERIOD || mainTASK2_PERIOD > mainTASK3_PERIOD
 #error TASKS HAVE TO BE SORTED BY PERIOD
 #endif
 
 int mainTaskPeriods[3] = {mainTASK1_PERIOD,mainTASK2_PERIOD,mainTASK3_PERIOD};
 
-/* Worst case of execution of the Tasks in mS */
-#define mainTASK1_WORSTCASE 210
-#define mainTASK2_WORSTCASE 420
-#define mainTASK3_WORSTCASE 660
+/* Worst case of execution of the Tasks in Ticks  - Assuming Tick rate == 100. Correct if different*/
+#define mainTASK1_WORSTCASE 21
+#define mainTASK2_WORSTCASE 42
+#define mainTASK3_WORSTCASE 66
 
 int mainWorstCaseComputeTime[3] = {mainTASK1_WORSTCASE,mainTASK2_WORSTCASE,mainTASK3_WORSTCASE};
+
 
 /* To be used by the tasks to update the in which Tick they will be ready*/
 int deadlineTask1 = mainTASK1_PERIOD;

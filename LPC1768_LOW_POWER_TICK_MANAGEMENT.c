@@ -44,6 +44,10 @@ extern volatile short periodicTickIncrementCount;
 extern const short availableFrequencyLevels;
 extern volatile bool frequencyChanged;
 
+extern int *deadlines[];
+extern int mainTaskPeriods[];
+extern int mainWorstCaseComputeTime[];
+
 #define SBIT_TIMER1 2
 #define SBIT_MR0I 0
 #define SBIT_MR0R 1
@@ -433,6 +437,10 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 
 #endif
 
+int convertTickToCycles(int ticks)
+{
+	return ticks * (frequencyLevels[currentFrequencyLevel] / configTICK_RATE_HZ);
+}
 /* Static voltage Scak=ling Implementation
 ** 
 ** Mode 0: RM
@@ -529,13 +537,13 @@ bool staticVoltageScalingEDF_Test(int numberOfTasks,
 ** To note: This function is not optimized for a huge amount of tasks, but having alarge amount of tasks 
 ** would break all the algorithms, therefore optimization here is not that important
 */
-static int findNextDeadline(int *deadlinesArray, int numberOfTasks)
+static int findNextDeadline(int **deadlinesArray, int numberOfTasks)
 {
-	int nextDeadline = *dealinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
+	int nextDeadline = *deadlinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
 	for (int i = 1; i < numberOfTasks; i++)
 	{
-		if (nextDeadline > *dealinesArray[i])
-			nextDealine = *dealinesArray[i];
+		if (nextDeadline > *deadlinesArray[i])
+			nextDeadline = *deadlinesArray[i];
 	}
 	return nextDeadline;
 }
@@ -549,19 +557,19 @@ static int findNextDeadline(int *deadlinesArray, int numberOfTasks)
 #endif
 
 int c_left1, c_left2, c_left3;
-int c_lefti[3] = {*c_left1, *c_left2, *c_left3};
+int *c_lefti[3] = {&c_left1, &c_left2, &c_left3};
 
 int d_1 = 0, d_2 = 0, d_3 = 0;
-int d_i[3] = {*d_1, *d_2, *d_3};
+int *d_i[3] = {&d_1, &d_2, &d_3};
 
 int frequencyChosenSVS = 96;
 
-void setupCycleConservingDVS(int numberOfTasks,
-							 int *taskPeriods, int *taskWorstCaseComputeTime)
+void setupCycleConservingDVS(
+	int *taskPeriods, int *taskWorstCaseComputeTime)
 {
-	frequencyChosen = staticVoltageScalingFrequencyLevelSelector(numberOfTasks,
-																 taskPeriods, taskWorstCaseComputeTime);
-	for (int i = 0; i < numberOfTasks; i++)
+	frequencyChosenSVS = staticVoltageScalingFrequencyLevelSelector(numberOFTASKS,
+																	taskPeriods, taskWorstCaseComputeTime, 0);
+	for (int i = 0; i < numberOFTASKS; i++)
 	{
 		*c_lefti[i] = taskWorstCaseComputeTime[i];
 	}
@@ -569,23 +577,33 @@ void setupCycleConservingDVS(int numberOfTasks,
 
 int cycleConservingDVSFrequencySelector(int currentTick)
 {
-	int maxTicksUntilNextDeadline = findNextDeadline(deadlines, numberOfTasks);
-}
+	// No need to convert into cycles, as the worst case computation time is in Ticks
+	int maxTicksUntilNextDeadline = findNextDeadline(deadlines, numberOFTASKS);
 
-void cycleConservingDVSTaskReady(int taskNumber, int currentTick)
-{
-	*c_lefti[taskNumber] = mainWorstCaseComputeTime[taskNumber];
-	int s_m = findNextDeadline(deadlines, numberOfTasks);
-	int s_j = ceil(s_m * frequencyChosenSVS / frequencyLevels[0]);
-	cycleConservingDVSAllocateCycles(s_j);
-	cycleConservingDVSFrequencySelector(currentTick);
-}
+	int totalD = 0;
 
-void cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
-{
-	*c_lefti[taskNumber] = 0;
-	*d_i[taskNumber] = 0;
-	cycleConservingDVSFrequencySelector(currentTick);
+	for (int i = 0; i < numberOFTASKS; i++)
+	{
+		totalD += *d_i[i];
+	}
+
+	float minimumFrequency = ((totalD * 1.0) / maxTicksUntilNextDeadline) * frequencyLevels[0];
+
+	/* Can be optimized if we have a lot of frequencies to choose from, by only searching the bottom or top frequencies
+	** Here it is not necessary as we have only 10 
+	*/
+	if (minimumFrequency > frequencyLevels[1])
+		return 0; //If bigger than the 2 available frequency, we can only use the base
+
+	int desiredFrequencyLevel = 0;
+	for (int i = 1; i < availableFrequencyLevels; i++)
+	{
+		if (minimumFrequency > frequencyLevels[i])
+			break;
+		desiredFrequencyLevel++;
+	}
+
+	return desiredFrequencyLevel; //Shouldn't get here
 }
 
 void cycleConservingDVSAllocateCycles(int k)
@@ -603,4 +621,20 @@ void cycleConservingDVSAllocateCycles(int k)
 			k = 0;
 		}
 	}
+}
+
+void cycleConservingDVSTaskReady(int taskNumber, int currentTick)
+{
+	*c_lefti[taskNumber] = mainWorstCaseComputeTime[taskNumber];
+	int s_m = findNextDeadline(deadlines, numberOFTASKS);
+	int s_j = ceil(s_m * (frequencyChosenSVS * 1.0) / (frequencyLevels[0] * 1.0));
+	cycleConservingDVSAllocateCycles(s_j);
+	cycleConservingDVSFrequencySelector(currentTick);
+}
+
+void cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
+{
+	*c_lefti[taskNumber] = 0;
+	*d_i[taskNumber] = 0;
+	cycleConservingDVSFrequencySelector(currentTick);
 }
