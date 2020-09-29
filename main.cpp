@@ -310,11 +310,7 @@ void vTask2(void * pvParameters)
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
         // if (contador != 0 && contador%5==0 && currentFrequencyLevel<=6) {
-        //     pc.fsync();
-        //     currentFrequencyLevel++;
-        //     setSystemFrequency(3, 0, mValues[currentFrequencyLevel], 1);
-        //     frequencyChanged=true;
-        //     Serial pc(USBTX, USBRX);
+
             
         // }
         contador++;

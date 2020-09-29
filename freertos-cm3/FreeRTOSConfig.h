@@ -67,9 +67,7 @@
  * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.
  *
  * See http://www.freertos.org/a00110.html.
- *----------------------------------------------------------*/
-
-#include <stdint.h>
+ *------------------------
 extern uint32_t SystemCoreClock;
 
 /* User included */

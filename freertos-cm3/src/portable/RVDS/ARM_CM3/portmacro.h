@@ -242,13 +242,6 @@ portFORCE_INLINE static void vPortSetBASEPRI( uint32_t ulNewMaskValue )
 #endif
 
 /* User defined Variables */
-#include <stdbool.h>
-extern const int frequencyLevels[];
-extern const int staticTickIncrement[];
-extern const int periodicTickIncrement[];
-extern volatile int currentFrequencyLevel;
-extern volatile short periodicTickIncrementCount;
-extern const short availableFrequencyLevels;
-extern volatile bool frequencyChanged;
+
 #endif /* PORTMACRO_H */
 

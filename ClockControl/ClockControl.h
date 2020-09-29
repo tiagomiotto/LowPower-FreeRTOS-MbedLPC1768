@@ -8,6 +8,11 @@
 #ifndef MBED_CLOCKCONTROL_H 
 #define MBED_CLOCKCONTROL_H 
 
+
+//Added this to make sure the function can be used in .c files
+#ifdef __cplusplus
+extern "C"
+#endif 
 unsigned int setSystemFrequency(unsigned char clkDivider, unsigned char clkSrc, unsigned short cfg_m, unsigned char cfg_n);
 void setPLL0Frequency(unsigned char clkSrc, unsigned short cfg_m, unsigned char cfg_n);
 void setPLL1Frequency(unsigned char clkSrc, unsigned short cfg_m, unsigned char cfg_n);
