@@ -112,6 +112,7 @@ LED4 = P1_23,
 
 #endif
 
+
 void frequencyLevelSelector(int level)
 {
 	if (level < 0 || level > availableFrequencyLevels)

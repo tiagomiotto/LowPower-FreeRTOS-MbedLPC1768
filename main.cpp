@@ -16,6 +16,7 @@
 
 #include "cycleCounter.h"
 
+#define DEVICE_SEMIHOST 0
 //#define cycleCounter 1
 
 DigitalOut myled(LED1);
@@ -23,7 +24,11 @@ DigitalOut myled1(LED3);
 DigitalOut myled2(LED2);
 DigitalOut myled4(LED4);
 
-
+// #define USR_POWERDOWN    (0x104)
+// int semihost_powerdown() {
+//     uint32_t arg;
+//     return __semihost(USR_POWERDOWN, &arg); 
+// }
 
 #define ld2         18 // P2_1
 
@@ -70,64 +75,68 @@ static void PrintTaskInfo();
 #define SBIT_CCALEN    4    /* RTC Calibration counter enable */
 
 
+class Watchdog {
+public:
+// Load timeout value in watchdog timer and enable
+    void kick(float s) {
+        LPC_WDT->WDCLKSEL = 0x02;               // Set CLK src to RTC for DeepSleep wakeup
+        LPC_WDT->WDTC = (s/4.0)*32768;
+        LPC_WDT->WDMOD = 0x3;                   // Enabled and Reset
+        kick();
+    }
+// "kick" or "feed" the dog - reset the watchdog timer
+// by writing this required bit pattern
+    void kick() {
+        LPC_WDT->WDFEED = 0xAA;
+        LPC_WDT->WDFEED = 0x55;
+    }
+};
+ 
+// Setup the watchdog timer
+Watchdog wdt;
+ 
+// Blink LED
+void blink() {
+    myled2 = 0;
+    myled1 = 1;
+}
+
 int main()
 {
- int periods[3] = {8,10,14};
- int compute[3] = {1,3,1};
 
- int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
-pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+    int result;
+
+ 
+// On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
+// Check reset source register
+    result = LPC_SC->RSID;
+    if ((result & 0x03 )==0) {
+// was not POR or reset pushbutton so
+// Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
+
+        myled4 = 1;
+        // wait(.00625);
+        // wdt.kick(2);
+        // blink();
+        // DeepSleep();
+//         myled4 = 1;
+//  int periods[3] = {8,10,14};
+//  int compute[3] = {1,3,1};
+
+//  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
+// pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
 
 
-pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
+// pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
  
 
 
-    //int result;
-//    Watchdog wdt;
-//    
-//        set_time(1256729737);
-//    tm t2 = RTC::getDefaultTM();
-//    t2.tm_min = 0;
-//    t2.tm_sec = 3;
-//    
-//
-//// On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
-//// Check reset source register
-//    result = LPC_SC->RSID;
-//    if ((result & 0x03 )==0) {
-//// was not POR or reset pushbutton so
-//// Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
-//        myled1 = 0;
-//        myled4 = 1;
-//        wait(.00625);
-//        wdt.kick(2);
-//        //RTC::alarm(&alarmFunction, t2);
-//// Power level in DeepSleep around 135mW (27MA at 5VDC)
-//// LED1 is several MAs of this
-//        DeepSleep();
-//// Watch dog timer wakes it up with a reset
-////
-//    myled4=0;
-//    myled1=1;
-//    wait(1);
-//    } else {
-//// Was an initial manual or Power on Reset
-//// This codes only executes the first time after initial POR or button reset
-//        LPC_SC->RSID = 0x0F;
-//// Clear reset source register bits for next reset
-//        myled2 = 1;
-//        result = mbed_interface_powerdown();
-//// Now can do a reset to free mbed of debug mode
-//// NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
-//        wait(1);
-//        NVIC_SystemReset();
-//    }
+
     time_t t;
     srand((unsigned)time(&t));
     struct RTC_DATA now = defaultTime();
     initRTC(now);
-
+    frequencyLevelSelector(0);
     KIN1_InitCycleCounter(); /* enable DWT hardware */
     //PHY_PowerDown();
     //LPC_GPIO1->FIODIR = (1<<ld2);
@@ -145,7 +154,9 @@ pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
     //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
     //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+   // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+
+    xTaskCreate(vTask3, "Task3", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
 
 
@@ -158,6 +169,45 @@ pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
     timer tasks to be created.  See the memory management section on the
     FreeRTOS web site for more details. */
     for (;; );
+    } else {
+// Was an initial manual or Power on Reset
+// This codes only executes the first time after initial POR or button reset
+        LPC_SC->RSID = 0x0F;
+// Clear reset source register bits for next reset
+        //myled3 = 1;
+// LED3 on to indicate initial reset at full power level
+// Normal mbed power level for this setup is around 690mW
+// assuming 5V used on Vin pin
+// If you don't need networking...
+// Power down Ethernet interface - saves around 175mW
+// Also need to unplug network cable - just a cable sucks power
+        PHY_PowerDown();
+// If you don't need the PC host USB interface....
+// Power down magic USB interface chip - saves around 150mW
+// Needs new firmware (URL below) and USB cable not connected
+// Power coming from Vin pin
+// http://mbed.org/handbook/Beta
+// Must supply power to mbed using Vin pin for powerdown
+// Also exits debug mode - must not be in debug mode
+// for deep power down modes
+myled2=1;
+        result = mbed_interface_powerdown();
+// Power consumption is now around half
+// Turn off clock enables on unused I/O Peripherals (UARTs, Timers, PWM, SPI, CAN, I2C, A/D...)
+// To save just a tiny bit more power - most are already off by default in this short code example
+// See PowerControl.h for I/O device bit assignments
+// Don't turn off GPIO - it is needed to blink the LEDs
+
+        Peripheral_PowerDown(0xFFFF7FFF);
+// Now can do a reset to free mbed of debug mode
+// NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
+        wait(1);
+        
+        NVIC_SystemReset();
+    }
+
+
+
 }
 
 volatile unsigned long x = 0, y = 0;
@@ -326,20 +376,20 @@ void vApplicationIdleHook(void)
 {
     if (led==0) {
         myled =0;
-        myled1=0;
+        myled1=1;
         myled4=0;
     }
     else {
-        myled =0;
+        myled =1;
         myled1=0;
         myled4=0;
     }
 
 
-    Sleep();
+    //Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
-
-    //DeepSleep();
+//wdt.kick(2);
+    DeepSleep();
     //PowerDown();
     //DeepPowerDown();
 }
