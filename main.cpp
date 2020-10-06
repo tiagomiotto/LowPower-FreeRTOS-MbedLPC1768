@@ -129,7 +129,7 @@ pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
     initRTC(now);
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
-    PHY_PowerDown();
+    //PHY_PowerDown();
     //LPC_GPIO1->FIODIR = (1<<ld2);
     //RTC::alarm(&alarmFunction, t2);
 
