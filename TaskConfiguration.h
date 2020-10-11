@@ -19,13 +19,20 @@ priority setter */
 
 /* Period of execution of the Tasks in mS */
 /* TASKS HAVE TO BE SORTED BY PERIOD */
-#define mainTASK1_PERIOD 500
-#define mainTASK2_PERIOD 1000
-#define mainTASK3_PERIOD 1500
+
+#if configTICK_RATE_HZ != 100
+#error TASKS HAVE TO BE SORTED BY PERIOD
+#endif 
+
+#define mainTASK1_PERIOD 50
+#define mainTASK2_PERIOD 100
+#define mainTASK3_PERIOD 150
 
 #if mainTASK1_PERIOD > mainTASK2_PERIOD || mainTASK1_PERIOD > mainTASK3_PERIOD || mainTASK2_PERIOD > mainTASK3_PERIOD
 #error TASKS HAVE TO BE SORTED BY PERIOD
 #endif
+
+
 
 int mainTaskPeriods[3] = {mainTASK1_PERIOD,mainTASK2_PERIOD,mainTASK3_PERIOD};
 

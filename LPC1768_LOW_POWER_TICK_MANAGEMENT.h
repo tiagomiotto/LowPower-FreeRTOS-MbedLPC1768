@@ -10,7 +10,7 @@ const uint8_t mValues[12] = {36, 33, 30, 27, 24, 18, 12, 9, 6, 3};
 const int frequencyLevels[] = {96, 88, 80, 72, 64, 48, 32, 24, 16, 8};
 const int staticTickIncrement[] = {0, 0, 0, 0, 0, 1, 2, 3, 5, 11};
 const int periodicTickIncrement[] = {0, 11, 5, 3, 2, 0, 0, 0, 0, 0};
-const short availableFrequencyLevels = 10;
+const int availableFrequencyLevels = 10;
 extern volatile int currentFrequencyLevel;
 extern volatile short periodicTickIncrementCount;
 extern volatile bool frequencyChanged;
@@ -42,7 +42,7 @@ void TIMER1_IRQHandler(void);
 unsigned int getPrescalarFor100Us(uint8_t timerPclkBit);
 
 
-	int
+int
 	staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
 											   int *taskPeriods, int *taskWorstCaseComputeTime, int mode);
 bool staticVoltageScalingRM_Test(int numberOfTasks,
@@ -50,6 +50,20 @@ bool staticVoltageScalingRM_Test(int numberOfTasks,
 
 bool staticVoltageScalingEDF_Test(int numberOfTasks,
 								  int *taskPeriods, int *taskWorstCaseComputeTime, float alpha);
+
+void setupCycleConservingDVS(
+	int *taskPeriods, int *taskWorstCaseComputeTime);
+
+
+int cycleConservingDVSFrequencySelector(int currentTick);
+void cycleConservingDVSAllocateCycles(int k);
+int cycleConservingDVSTaskReady(int taskNumber, int currentTick);
+int cycleConservingDVSTaskComplete(int taskNumber, int currentTick);
+
+int cycleConservingDVSFrequencySelectorEDF();
+void cycleConservingDVSTaskReadyEDF(int taskNumber, int currentTick);
+void cycleConservingDVSTaskCompleteEDF(int taskNumber, int actualTaskExecutionTicks);
+
 #ifdef __cplusplus
 }
 #endif

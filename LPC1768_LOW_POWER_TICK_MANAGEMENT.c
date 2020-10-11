@@ -115,14 +115,19 @@ LED4 = P1_23,
 
 void frequencyLevelSelector(int level)
 {
-	if (level < 0 || level > availableFrequencyLevels)
-	{
-		return;
-	}
+	if(level==currentFrequencyLevel) return;
+	//Check the Cycle conserving to see whats happenning, this is just a dirty fix
+	if(level<0) level=0;
+	if(level>availableFrequencyLevels) level = availableFrequencyLevels-1;
+	// if (level < 0 || level > availableFrequencyLevels)
+	// {
+	// 	return;
+	// }
 
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
 	frequencyChanged = true;
+	LPC_GPIO1->FIOPIN = (1 << LED4);
 }
 
 /*
@@ -188,6 +193,7 @@ void dynamicFrequencySysTickHandler(void)
 
 	/* The CPU woke because of a tick. */
 	ulTickFlag = pdTRUE;
+		
 }
 
 void vPortSetupTimerInterrupt(void)
@@ -590,7 +596,7 @@ int *c_lefti[3] = {&c_left1, &c_left2, &c_left3};
 int d_1 = 0, d_2 = 0, d_3 = 0;
 int *d_i[3] = {&d_1, &d_2, &d_3};
 
-int frequencyChosenSVS = 96;
+int frequencyChosenSVS = 0;
 
 void setupCycleConservingDVS(
 	int *taskPeriods, int *taskWorstCaseComputeTime)
@@ -606,15 +612,17 @@ void setupCycleConservingDVS(
 int cycleConservingDVSFrequencySelector(int currentTick)
 {
 	// No need to convert into cycles, as the worst case computation time is in Ticks
-	int maxTicksUntilNextDeadline = findNextDeadline(deadlines, numberOFTASKS);
+	int maxTicksUntilNextDeadline = findNextDeadline(deadlines, numberOFTASKS) - currentTick;
 
 	int totalD = 0;
+
+	int desiredFrequencyLevel = 0;
 
 	for (int i = 0; i < numberOFTASKS; i++)
 	{
 		totalD += *d_i[i];
 	}
-
+	
 	float minimumFrequency = ((totalD * 1.0) / maxTicksUntilNextDeadline) * frequencyLevels[0];
 
 	/* Can be optimized if we have a lot of frequencies to choose from, by only searching the bottom or top frequencies
@@ -623,7 +631,7 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	if (minimumFrequency > frequencyLevels[1])
 		return 0; //If bigger than the 2 available frequency, we can only use the base
 
-	int desiredFrequencyLevel = 0;
+	
 	for (int i = 1; i < availableFrequencyLevels; i++)
 	{
 		if (minimumFrequency > frequencyLevels[i])
@@ -632,6 +640,8 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	}
 	frequencyLevelSelector(desiredFrequencyLevel);
 	return desiredFrequencyLevel;
+
+	
 }
 
 void cycleConservingDVSAllocateCycles(int k)
@@ -651,20 +661,23 @@ void cycleConservingDVSAllocateCycles(int k)
 	}
 }
 
-void cycleConservingDVSTaskReady(int taskNumber, int currentTick)
+int cycleConservingDVSTaskReady(int taskNumber, int currentTick)
 {
 	*c_lefti[taskNumber] = mainWorstCaseComputeTime[taskNumber];
-	int s_m = findNextDeadline(deadlines, numberOFTASKS);
-	int s_j = ceil(s_m * (frequencyChosenSVS * 1.0) / (frequencyLevels[0] * 1.0));
+	int s_m = findNextDeadline(deadlines, numberOFTASKS) - currentTick;
+	
+	int s_j = ceil(s_m * (frequencyLevels[currentFrequencyLevel] * 1.0) / (frequencyLevels[0] * 1.0));
 	cycleConservingDVSAllocateCycles(s_j);
-	cycleConservingDVSFrequencySelector(currentTick);
+	
+	int aux = cycleConservingDVSFrequencySelector(currentTick);
+	return aux;
 }
 
-void cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
+int cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
 {
 	*c_lefti[taskNumber] = 0;
 	*d_i[taskNumber] = 0;
-	cycleConservingDVSFrequencySelector(currentTick);
+	return cycleConservingDVSFrequencySelector(currentTick);
 }
 
 /* Cycle Conserving DVS EDF

@@ -48,6 +48,8 @@ DigitalOut myled4(LED4);
 void vTask1(void * pvParameters);
 void vTask2(void * pvParameters);
 void vTask3(void * pvParameters);
+void vTask4(void * pvParameters);
+void vTask5(void * pvParameters);
 Serial pc(USBTX, USBRX);
 int led =0;
 volatile long contador=0;
@@ -101,33 +103,99 @@ void blink() {
     myled1 = 1;
 }
 
+int printNextDeadline(int **deadlinesArray, int numberOfTasks){
+    	int nextDeadline = *deadlinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
+	for (int i = 0; i < numberOfTasks; i++)
+	{
+		if (nextDeadline > *deadlinesArray[i])
+			nextDeadline = *deadlinesArray[i];
+        
+	}
+    return nextDeadline;
+}
+
+int taskNumbers[5] = {0,1,2,3,4};
+
+#define VANILLA 0
+#ifdef VANILLA
+int main(){
+
+    time_t t;
+    srand((unsigned)time(&t));
+    struct RTC_DATA now = defaultTime();
+    initRTC(now);
+    frequencyLevelSelector(0);
+    KIN1_InitCycleCounter(); /* enable DWT hardware */
+    //Peripheral_PowerDown(0xFFFF7FFF);
+    PHY_PowerDown();
+    //PHY_PowerDown();
+    //LPC_GPIO1->FIODIR = (1<<ld2);
+    //RTC::alarm(&alarmFunction, t2);
+
+    //pc.printf("bbbb %d\n", tee-1);
+    //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
+    //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
+    /* Start the two tasks as described in the comments at the top of this
+    file. */
+    //    xTaskCreate( vTask1,           /* The function that implements the task. */
+    //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
+    //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
+    //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
+    //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
+    //                 NULL );                         /* The task handle is not required, so NULL is passed. */
+
+   // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+
+    setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime);
+    Serial pc(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
+    xTaskCreate(vTask3, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
+    xTaskCreate(vTask3, "Task2", mainDEFAULT_STACK_SIZE, &taskNumbers[1], mainTASK2_PRIORITY, NULL);
+    xTaskCreate(vTask3, "Task3", mainDEFAULT_STACK_SIZE, &taskNumbers[2], mainTASK3_PRIORITY, NULL);
+
+    pc.printf("AAA %d Hz, %d\n", SystemCoreClock, currentFrequencyLevel);
+
+
+    // *deadlines[0]= 2000;
+    // printNextDeadline(deadlines, 3,pc);
+
+    /* Start the tasks and timer running. */
+    vTaskStartScheduler();
+
+    /* If all is well, the scheduler will now be running, and the following
+    line will never be reached.  If the following line does execute, then
+    there was insufficient FreeRTOS heap memory available for the idle and/or
+    timer tasks to be created.  See the memory management section on the
+    FreeRTOS web site for more details. */
+}
+
+#else
 int main()
 {
 
     int result;
 
  
-// On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
-// Check reset source register
+    // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
+    // Check reset source register
     result = LPC_SC->RSID;
     if ((result & 0x03 )==0) {
-// was not POR or reset pushbutton so
-// Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
+    // was not POR or reset pushbutton so
+    // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
 
         myled4 = 1;
         // wait(.00625);
         // wdt.kick(2);
         // blink();
         // DeepSleep();
-//         myled4 = 1;
-//  int periods[3] = {8,10,14};
-//  int compute[3] = {1,3,1};
+        //         myled4 = 1;
+        //  int periods[3] = {8,10,14};
+        //  int compute[3] = {1,3,1};
 
-//  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
-// pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+        //  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
+        // pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
 
 
-// pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
+    // pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
  
 
 
@@ -136,8 +204,9 @@ int main()
     srand((unsigned)time(&t));
     struct RTC_DATA now = defaultTime();
     initRTC(now);
-    frequencyLevelSelector(0);
+    frequencyLevelSelector(5);
     KIN1_InitCycleCounter(); /* enable DWT hardware */
+
     //PHY_PowerDown();
     //LPC_GPIO1->FIODIR = (1<<ld2);
     //RTC::alarm(&alarmFunction, t2);
@@ -170,37 +239,37 @@ int main()
     FreeRTOS web site for more details. */
     for (;; );
     } else {
-// Was an initial manual or Power on Reset
-// This codes only executes the first time after initial POR or button reset
+    // Was an initial manual or Power on Reset
+    // This codes only executes the first time after initial POR or button reset
         LPC_SC->RSID = 0x0F;
-// Clear reset source register bits for next reset
-        //myled3 = 1;
-// LED3 on to indicate initial reset at full power level
-// Normal mbed power level for this setup is around 690mW
-// assuming 5V used on Vin pin
-// If you don't need networking...
-// Power down Ethernet interface - saves around 175mW
-// Also need to unplug network cable - just a cable sucks power
+    // Clear reset source register bits for next reset
+            //myled3 = 1;
+    // LED3 on to indicate initial reset at full power level
+    // Normal mbed power level for this setup is around 690mW
+    // assuming 5V used on Vin pin
+    // If you don't need networking...
+    // Power down Ethernet interface - saves around 175mW
+    // Also need to unplug network cable - just a cable sucks power
         PHY_PowerDown();
-// If you don't need the PC host USB interface....
-// Power down magic USB interface chip - saves around 150mW
-// Needs new firmware (URL below) and USB cable not connected
-// Power coming from Vin pin
-// http://mbed.org/handbook/Beta
-// Must supply power to mbed using Vin pin for powerdown
-// Also exits debug mode - must not be in debug mode
-// for deep power down modes
-myled2=1;
+    // If you don't need the PC host USB interface....
+    // Power down magic USB interface chip - saves around 150mW
+    // Needs new firmware (URL below) and USB cable not connected
+    // Power coming from Vin pin
+    // http://mbed.org/handbook/Beta
+    // Must supply power to mbed using Vin pin for powerdown
+    // Also exits debug mode - must not be in debug mode
+    // for deep power down modes
+        myled2=1;
         result = mbed_interface_powerdown();
-// Power consumption is now around half
-// Turn off clock enables on unused I/O Peripherals (UARTs, Timers, PWM, SPI, CAN, I2C, A/D...)
-// To save just a tiny bit more power - most are already off by default in this short code example
-// See PowerControl.h for I/O device bit assignments
-// Don't turn off GPIO - it is needed to blink the LEDs
+    // Power consumption is now around half
+    // Turn off clock enables on unused I/O Peripherals (UARTs, Timers, PWM, SPI, CAN, I2C, A/D...)
+    // To save just a tiny bit more power - most are already off by default in this short code example
+    // See PowerControl.h for I/O device bit assignments
+    // Don't turn off GPIO - it is needed to blink the LEDs
 
         Peripheral_PowerDown(0xFFFF7FFF);
-// Now can do a reset to free mbed of debug mode
-// NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
+    // Now can do a reset to free mbed of debug mode
+    // NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
         wait(1);
         
         NVIC_SystemReset();
@@ -209,8 +278,8 @@ myled2=1;
 
 
 }
+#endif
 
-volatile unsigned long x = 0, y = 0;
 void vTask1(void * pvParameters)
 {
     const TickType_t xDelay = mainTASK1_PERIOD / portTICK_PERIOD_MS;
@@ -254,40 +323,6 @@ void vTask1(void * pvParameters)
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);
     }
 }
-
-void vTask3(void * pvParameters)
-{
-    const TickType_t xDelay = 1500 / portTICK_PERIOD_MS;
-    TickType_t xLastWakeTime;
-    struct RTC_DATA now;
-
-    xLastWakeTime = xTaskGetTickCount();
-    for (;; ) {
-        deadline1= xLastWakeTime + xDelay;
-        if (led==0) {
-            myled=0;
-            led=1;
-        }
-        else {
-            myled1=0;
-            led=0;
-        }
-
-        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
-            //myled2=1;
-            contador++;
-
-        }
-        now = getTime();
-
-        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
-        vTaskDelayUntil(&xLastWakeTime, xDelay);
-        //myled =0;
-        //vTaskDelay( xDelay );
-
-    }
-}
-
 
 void vTask2(void * pvParameters)
 {
@@ -346,16 +381,16 @@ void vTask2(void * pvParameters)
         //pc.printf("%d ticks, %d idle time, %d deadline2\n",xTaskGetTickCount(),useridleTime,deadline2);
 
         //pc.printf("%s \n", stats);
-//        if(deadline2 >(xTaskGetTickCount()-xLastWakeTime)*2) {
-//            if(frequencyDivider<=minDivider) {
-//                if(frequencyDivider==0) setSystemFrequency(3,0,36, 1);
-//                else {
-//                    setSystemFrequency(3*frequencyDivider,0,36, 1);
-//                    Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
-//                    frequencyDivider++;
-//                }
-//            }
-//        }
+    //        if(deadline2 >(xTaskGetTickCount()-xLastWakeTime)*2) {
+    //            if(frequencyDivider<=minDivider) {
+    //                if(frequencyDivider==0) setSystemFrequency(3,0,36, 1);
+    //                else {
+    //                    setSystemFrequency(3*frequencyDivider,0,36, 1);
+    //                    Serial pc2(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
+    //                    frequencyDivider++;
+    //                }
+    //            }
+    //        }
 
         //pc.printf("%d Hz, %d, divider %d, 1s = %d ticks\n", SystemCoreClock, LPC_SC->CCLKCFG,frequencyDivider, 1000 / portTICK_PERIOD_MS);       
 
@@ -366,6 +401,61 @@ void vTask2(void * pvParameters)
         contador++;
         vTaskDelayUntil(&xLastWakeTime, xDelay);
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);
+    }
+}
+
+
+void vTask3(void * pvParameters)
+{
+    int *pvTaskNumberPTR;
+    pvTaskNumberPTR = (int *) pvParameters;
+
+    
+    const TickType_t xDelay = *deadlines[*pvTaskNumberPTR] ;
+    
+    TickType_t xLastWakeTime;
+    struct RTC_DATA now;
+    //pc.printf("Starting task %d\n",*pvTaskNumberPTR);
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;; ) {
+        
+        *deadlines[*pvTaskNumberPTR]= (xLastWakeTime + xDelay);
+        int aux = cycleConservingDVSTaskReady(*pvTaskNumberPTR, xTaskGetTickCount());
+        //Serial pc(USBTX, USBRX);
+        //Serial pc(USBTX, USBRX);
+
+        // fibonnacciCalculation(1000);
+
+        if (led==0) {
+            myled=1;
+            led=1;
+        }
+        else {
+            myled1=0;
+            led=0;
+        }
+
+        fibonnacciCalculation(10000);
+        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+            //myled2=1;
+            contador++;
+
+        }
+        
+        //pc.printf("BLAA %d\n", xTaskGetTickCount());
+        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
+        aux = cycleConservingDVSTaskComplete(*pvTaskNumberPTR, xTaskGetTickCount());
+        LPC_GPIO1->FIOPIN = (1 << 20);
+        // myled=0;
+        // pc.printf("Task %d, New deadline %d, level %d\n", *pvTaskNumberPTR,*deadlines[*pvTaskNumberPTR], xTaskGetTickCount());
+        // fibonnacciCalculation(100000);
+        // while(1);
+        // pc.printf("CCC %d\n",*pvTaskNumberPTR);
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
+        //myled =0;
+        //vTaskDelay( xDelay );
+
     }
 }
 
@@ -383,13 +473,14 @@ void vApplicationIdleHook(void)
         myled =1;
         myled1=0;
         myled4=0;
+        
     }
 
 
-    //Sleep();
+    Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
-//wdt.kick(2);
-    DeepSleep();
+    //wdt.kick(2);
+    //DeepSleep();
     //PowerDown();
     //DeepPowerDown();
 }
