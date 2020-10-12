@@ -38,8 +38,8 @@ int mainTaskPeriods[3] = {mainTASK1_PERIOD,mainTASK2_PERIOD,mainTASK3_PERIOD};
 
 /* Worst case of execution of the Tasks in Ticks  - Assuming Tick rate == 100. Correct if different*/
 #define mainTASK1_WORSTCASE 21
-#define mainTASK2_WORSTCASE 42
-#define mainTASK3_WORSTCASE 66
+#define mainTASK2_WORSTCASE 21
+#define mainTASK3_WORSTCASE 21
 
 int mainWorstCaseComputeTime[3] = {mainTASK1_WORSTCASE,mainTASK2_WORSTCASE,mainTASK3_WORSTCASE};
 

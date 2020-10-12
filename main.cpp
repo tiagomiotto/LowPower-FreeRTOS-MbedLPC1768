@@ -19,11 +19,17 @@
 #define DEVICE_SEMIHOST 0
 //#define cycleCounter 1
 
-DigitalOut myled(LED1);
-DigitalOut myled1(LED3);
+DigitalOut myled1(LED1);
 DigitalOut myled2(LED2);
+DigitalOut myled3(LED3);
 DigitalOut myled4(LED4);
 
+#define LED1 18 //
+#define LED2 20 //
+#define LED3 21 //
+#define LED4 23 //
+
+int ledCODES[4] = {LED1,LED2,LED3,LED4};
 // #define USR_POWERDOWN    (0x104)
 // int semihost_powerdown() {
 //     uint32_t arg;
@@ -100,7 +106,7 @@ Watchdog wdt;
 // Blink LED
 void blink() {
     myled2 = 0;
-    myled1 = 1;
+    myled2 = 1;
 }
 
 int printNextDeadline(int **deadlinesArray, int numberOfTasks){
@@ -146,7 +152,11 @@ int main(){
 
    // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
-    setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime);
+    if(setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime) == -1) {
+        pc.printf("Taskset unfeasible %d\n", -1);
+        return 0;
+    }
+    
     Serial pc(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
     xTaskCreate(vTask3, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
     xTaskCreate(vTask3, "Task2", mainDEFAULT_STACK_SIZE, &taskNumbers[1], mainTASK2_PRIORITY, NULL);
@@ -407,53 +417,57 @@ void vTask2(void * pvParameters)
 
 void vTask3(void * pvParameters)
 {
-    int *pvTaskNumberPTR;
-    pvTaskNumberPTR = (int *) pvParameters;
+    int pvTaskNumber;
+    pvTaskNumber = *(int *) pvParameters;
+    
 
     
-    const TickType_t xDelay = *deadlines[*pvTaskNumberPTR] ;
+    const TickType_t xDelay = *deadlines[pvTaskNumber] ;
     
     TickType_t xLastWakeTime;
     struct RTC_DATA now;
-    //pc.printf("Starting task %d\n",*pvTaskNumberPTR);
+    int taskLed = ledCODES[pvTaskNumber];
+
+    //pc.printf("Starting task %d\n",*pvTaskNumber);
     xLastWakeTime = xTaskGetTickCount();
 
     for (;; ) {
         
-        *deadlines[*pvTaskNumberPTR]= (xLastWakeTime + xDelay);
-        int aux = cycleConservingDVSTaskReady(*pvTaskNumberPTR, xTaskGetTickCount());
+        *deadlines[pvTaskNumber]= (xLastWakeTime + xDelay);
+        int aux = cycleConservingDVSTaskReady(pvTaskNumber, xTaskGetTickCount());
+        LPC_GPIO1->FIOPIN = (1 << taskLed) | (LPC_GPIO1->FIOPIN & (1<<LED4));
         //Serial pc(USBTX, USBRX);
         //Serial pc(USBTX, USBRX);
 
         // fibonnacciCalculation(1000);
 
-        if (led==0) {
-            myled=1;
-            led=1;
-        }
-        else {
-            myled1=0;
-            led=0;
-        }
+        // if (led==0) {
+        //     myled1=1;
+        //     led=1;
+        // }
+        // else {
+        //     myled2=0;
+        //     led=0;
+        // }
 
-        fibonnacciCalculation(10000);
+        fibonnacciCalculation(1012000/(pvTaskNumber+1));
         if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
-            //myled2=1;
+            LPC_GPIO1->FIOPIN = LPC_GPIO1->FIOPIN | (1<<LED4);
             contador++;
 
         }
         
         //pc.printf("BLAA %d\n", xTaskGetTickCount());
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
-        aux = cycleConservingDVSTaskComplete(*pvTaskNumberPTR, xTaskGetTickCount());
-        LPC_GPIO1->FIOPIN = (1 << 20);
-        // myled=0;
-        // pc.printf("Task %d, New deadline %d, level %d\n", *pvTaskNumberPTR,*deadlines[*pvTaskNumberPTR], xTaskGetTickCount());
+        //frequencyLevelSelector(8);
+        aux = cycleConservingDVSTaskComplete(pvTaskNumber, xTaskGetTickCount());
+        // myled1=0;
+        // pc.printf("Task %d, New deadline %d, level %d\n", *pvTaskNumber,*deadlines[*pvTaskNumber], xTaskGetTickCount());
         // fibonnacciCalculation(100000);
         // while(1);
-        // pc.printf("CCC %d\n",*pvTaskNumberPTR);
+        // pc.printf("CCC %d\n",*pvTaskNumber);
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-        //myled =0;
+        //myled2=0;
         //vTaskDelay( xDelay );
 
     }
@@ -465,13 +479,13 @@ extern "C"
 void vApplicationIdleHook(void)
 {
     if (led==0) {
-        myled =0;
-        myled1=1;
+        myled1=0;
+        myled2=0;
         myled4=0;
     }
     else {
-        myled =1;
         myled1=0;
+        myled2=0;
         myled4=0;
         
     }

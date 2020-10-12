@@ -12,6 +12,7 @@ void setPLL0Frequency(unsigned char clkSrc, unsigned short cfg_m, unsigned char 
       LPC_SC->PLL0CON   = 0x03;
       LPC_SC->PLL0FEED  = 0xAA;
       LPC_SC->PLL0FEED  = 0x55;
+      LPC_GPIO1->FIOPIN = (1 << 18);
 }
 
 void setPLL1Frequency(unsigned char clkSrc, unsigned short cfg_m, unsigned char cfg_n)

@@ -85,10 +85,6 @@ static TickType_t xMaximumPossibleSuppressedTicks = 0;
 #include "PowerControl.h"
 #include "ClockControl.h"
 
-#define LED1 18 //
-#define LED2 20 //
-#define LED3 21 //
-#define LED4 23 //
 
 /* Write to GPIO 2 on Port 18,20,21,23
  Initialized on main  otherwise initialize here
@@ -117,17 +113,16 @@ void frequencyLevelSelector(int level)
 {
 	if(level==currentFrequencyLevel) return;
 	//Check the Cycle conserving to see whats happenning, this is just a dirty fix
-	if(level<0) level=0;
-	if(level>availableFrequencyLevels) level = availableFrequencyLevels-1;
-	// if (level < 0 || level > availableFrequencyLevels)
-	// {
-	// 	return;
-	// }
+	// if(level<0) level=0;
+	// if(level>availableFrequencyLevels) level = availableFrequencyLevels-1;
+	if (level < 0 || level > availableFrequencyLevels)
+	{
+		return;
+	}
 
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
 	frequencyChanged = true;
-	LPC_GPIO1->FIOPIN = (1 << LED4);
 }
 
 /*
@@ -499,6 +494,7 @@ extern "C"
 			if (validAlpha)
 				i++;
 		}
+		if(!validAlpha && i==0) return -1;
 		selectedFrequencyLevel = i - 1;
 		frequencyLevelSelector(selectedFrequencyLevel);
 		return selectedFrequencyLevel;
@@ -513,6 +509,7 @@ extern "C"
 			if (validAlpha)
 				i++;
 		}
+		if(!validAlpha && i==0) return -1;
 		selectedFrequencyLevel = i - 1;
 		frequencyLevelSelector(selectedFrequencyLevel);
 		return selectedFrequencyLevel;
@@ -598,11 +595,12 @@ int *d_i[3] = {&d_1, &d_2, &d_3};
 
 int frequencyChosenSVS = 0;
 
-void setupCycleConservingDVS(
+int setupCycleConservingDVS(
 	int *taskPeriods, int *taskWorstCaseComputeTime)
 {
 	frequencyChosenSVS = staticVoltageScalingFrequencyLevelSelector(numberOFTASKS,
 																	taskPeriods, taskWorstCaseComputeTime, 0);
+	if(frequencyChosenSVS<0) return;									
 	for (int i = 0; i < numberOFTASKS; i++)
 	{
 		*c_lefti[i] = taskWorstCaseComputeTime[i];
@@ -624,7 +622,7 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	}
 	
 	float minimumFrequency = ((totalD * 1.0) / maxTicksUntilNextDeadline) * frequencyLevels[0];
-
+	
 	/* Can be optimized if we have a lot of frequencies to choose from, by only searching the bottom or top frequencies
 	** Here it is not necessary as we have only 10 
 	*/
@@ -669,8 +667,8 @@ int cycleConservingDVSTaskReady(int taskNumber, int currentTick)
 	int s_j = ceil(s_m * (frequencyLevels[currentFrequencyLevel] * 1.0) / (frequencyLevels[0] * 1.0));
 	cycleConservingDVSAllocateCycles(s_j);
 	
-	int aux = cycleConservingDVSFrequencySelector(currentTick);
-	return aux;
+	return cycleConservingDVSFrequencySelector(currentTick);
+	
 }
 
 int cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
@@ -678,6 +676,7 @@ int cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
 	*c_lefti[taskNumber] = 0;
 	*d_i[taskNumber] = 0;
 	return cycleConservingDVSFrequencySelector(currentTick);
+	
 }
 
 /* Cycle Conserving DVS EDF
