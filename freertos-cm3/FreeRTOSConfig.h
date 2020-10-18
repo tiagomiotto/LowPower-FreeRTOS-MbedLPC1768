@@ -67,7 +67,7 @@
  * FreeRTOS API DOCUMENTATION AVAILABLE ON THE FreeRTOS.org WEB SITE.
  *
  * See http://www.freertos.org/a00110.html.
- *------------------------
+ *------------------------ */
 extern uint32_t SystemCoreClock;
 
 /* User included */
@@ -76,7 +76,7 @@ extern uint32_t SystemCoreClock;
 demo, or 0 to run the more comprehensive test and demo application. */
 #define configDYNAMIC_FREQUENCY_LOW_POWER_MODE 1
 
-//#define DEBUG 1
+#define DEBUG 1
 
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
@@ -197,5 +197,10 @@ standard names. */
 #endif
 
 #define numberOFTASKS 3
+
+/* Integrates the Tracealyzer recorder with FreeRTOS */
+#if ( configUSE_TRACE_FACILITY == 5 )
+	#include "trcRecorder.h"
+#endif
 
 #endif /* FREERTOS_CONFIG_H */

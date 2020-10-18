@@ -34,18 +34,10 @@
 #include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
 #include "math.h"
 #include "ClockControl.h"
+#include "PowerControl.h"
 
 /* User defined Variables */
 #include <stdbool.h>
-
-// const uint8_t mValues[12] = {36, 33, 30, 27, 24, 18, 12, 9, 6, 3};
-// const int frequencyLevels[] = {96, 88, 80, 72, 64, 48, 32, 24, 16, 8};
-// const int staticTickIncrement[] = {0, 0, 0, 0, 0, 1, 2, 3, 5, 11};
-// const int periodicTickIncrement[] = {0, 11, 5, 3, 2, 0, 0, 0, 0, 0};
-// volatile int currentFrequencyLevel = 0;
-// volatile short periodicTickIncrementCount = 0;
-// volatile bool frequencyChanged = false;
-// const short availableFrequencyLevels = 10;
 
 volatile int currentFrequencyLevel = 0;
 volatile short periodicTickIncrementCount = 0;
@@ -94,17 +86,33 @@ LED1 = P1_18,
 LED2 = P1_20,
 LED3 = P1_21,
 LED4 = P1_23,
+#define LED1 18 //
+#define LED2 20 //
+#define LED3 21 //
+#define LED4 23 //
 */
 
 #ifdef DEBUG
+ //x*(portTICK_PERIOD_MS/1000.0)
+	// LPC_WDT->WDCLKSEL = 0x02;  \
+	// LPC_WDT->WDTC = (1/4.0)*32768; \
+    // LPC_WDT->WDMOD = 0x1;  \
+	// LPC_WDT->WDFEED = 0xAA;\
+    // LPC_WDT->WDFEED = 0x55; \
+	// SCB->SCR |= 0x4; 
+// Setup the watchdog timer
+
 
 #define configPRE_SLEEP_PROCESSING(x) \
-	LPC_GPIO1->FIOPIN = (1 << LED1);  \
-	Sleep();
-#define configPOST_SLEEP_PROCESSING(x) LPC_GPIO1->FIOPIN = (0 << LED1);
+	LPC_GPIO1->FIOPIN = (1 << 23); 
+
+
+#define configPOST_SLEEP_PROCESSING(x) \
+	LPC_GPIO1->FIOPIN = (0 << 23); 
+
 
 #else
-#define configPRE_SLEEP_PROCESSING(x) Sleep();
+
 
 #endif
 

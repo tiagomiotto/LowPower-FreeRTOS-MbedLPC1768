@@ -30,25 +30,8 @@ DigitalOut myled4(LED4);
 #define LED4 23 //
 
 int ledCODES[4] = {LED1,LED2,LED3,LED4};
-// #define USR_POWERDOWN    (0x104)
-// int semihost_powerdown() {
-//     uint32_t arg;
-//     return __semihost(USR_POWERDOWN, &arg); 
-// }
 
 #define ld2         18 // P2_1
-
-/* TIMER REGISTERS */
-#define T0TCR      0x40004004
-#define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
-#define T0PR      0x4000400C
-#define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
-
-
-
-
-
-
 
 /*-----------------------------------------------------------*/
 void vTask1(void * pvParameters);
@@ -59,6 +42,7 @@ void vTask5(void * pvParameters);
 Serial pc(USBTX, USBRX);
 int led =0;
 volatile long contador=0;
+volatile long contador2=0;
 volatile long deadline1=0;
 volatile long deadline2=0;
 volatile long dealine3=0;
@@ -77,47 +61,11 @@ static void PrintTaskInfo();
 //Changed min stack size to 300
 
 
-/* bit position of CCR register */
-#define SBIT_CLKEN     0    /* RTC Clock Enable*/
-#define SBIT_CTCRST    1    /* RTC Clock Reset */
-#define SBIT_CCALEN    4    /* RTC Calibration counter enable */
 
-
-class Watchdog {
-public:
-// Load timeout value in watchdog timer and enable
-    void kick(float s) {
-        LPC_WDT->WDCLKSEL = 0x02;               // Set CLK src to RTC for DeepSleep wakeup
-        LPC_WDT->WDTC = (s/4.0)*32768;
-        LPC_WDT->WDMOD = 0x3;                   // Enabled and Reset
-        kick();
-    }
-// "kick" or "feed" the dog - reset the watchdog timer
-// by writing this required bit pattern
-    void kick() {
-        LPC_WDT->WDFEED = 0xAA;
-        LPC_WDT->WDFEED = 0x55;
-    }
-};
- 
-// Setup the watchdog timer
-Watchdog wdt;
- 
 // Blink LED
 void blink() {
     myled2 = 0;
     myled2 = 1;
-}
-
-int printNextDeadline(int **deadlinesArray, int numberOfTasks){
-    	int nextDeadline = *deadlinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
-	for (int i = 0; i < numberOfTasks; i++)
-	{
-		if (nextDeadline > *deadlinesArray[i])
-			nextDeadline = *deadlinesArray[i];
-        
-	}
-    return nextDeadline;
 }
 
 int taskNumbers[5] = {0,1,2,3,4};
@@ -134,12 +82,7 @@ int main(){
     KIN1_InitCycleCounter(); /* enable DWT hardware */
     //Peripheral_PowerDown(0xFFFF7FFF);
     PHY_PowerDown();
-    //PHY_PowerDown();
-    //LPC_GPIO1->FIODIR = (1<<ld2);
-    //RTC::alarm(&alarmFunction, t2);
 
-    //pc.printf("bbbb %d\n", tee-1);
-    //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
     //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
     /* Start the two tasks as described in the comments at the top of this
     file. */
@@ -152,21 +95,18 @@ int main(){
 
    // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
-    if(setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime) == -1) {
-        pc.printf("Taskset unfeasible %d\n", -1);
-        return 0;
-    }
+    // if(setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime) == -1) {
+    //     pc.printf("Taskset unfeasible %d\n", -1);
+    //     return 0;
+    // }
     
     Serial pc(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
-    xTaskCreate(vTask3, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
-    xTaskCreate(vTask3, "Task2", mainDEFAULT_STACK_SIZE, &taskNumbers[1], mainTASK2_PRIORITY, NULL);
-    xTaskCreate(vTask3, "Task3", mainDEFAULT_STACK_SIZE, &taskNumbers[2], mainTASK3_PRIORITY, NULL);
-
+    xTaskCreate(vTask4, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
+    xTaskCreate(vTask4, "Task2", mainDEFAULT_STACK_SIZE, &taskNumbers[1], mainTASK2_PRIORITY, NULL);
+    xTaskCreate(vTask4, "Task3", mainDEFAULT_STACK_SIZE, &taskNumbers[2], mainTASK3_PRIORITY, NULL);
+    
+    
     pc.printf("AAA %d Hz, %d\n", SystemCoreClock, currentFrequencyLevel);
-
-
-    // *deadlines[0]= 2000;
-    // printNextDeadline(deadlines, 3,pc);
 
     /* Start the tasks and timer running. */
     vTaskStartScheduler();
@@ -191,39 +131,9 @@ int main()
     if ((result & 0x03 )==0) {
     // was not POR or reset pushbutton so
     // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
-
-        myled4 = 1;
-        // wait(.00625);
-        // wdt.kick(2);
-        // blink();
-        // DeepSleep();
-        //         myled4 = 1;
-        //  int periods[3] = {8,10,14};
-        //  int compute[3] = {1,3,1};
-
-        //  int test = staticVoltageScalingFrequencyLevelSelector(3,periods,compute,1);
-        // pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
-
-
-    // pc.printf("M level %d : %d MHz \n", *deadlines[0],  *deadlines[1]);
- 
-
-
-
-    time_t t;
-    srand((unsigned)time(&t));
-    struct RTC_DATA now = defaultTime();
-    initRTC(now);
-    frequencyLevelSelector(5);
+    frequencyLevelSelector(0);
     KIN1_InitCycleCounter(); /* enable DWT hardware */
 
-    //PHY_PowerDown();
-    //LPC_GPIO1->FIODIR = (1<<ld2);
-    //RTC::alarm(&alarmFunction, t2);
-
-    //pc.printf("bbbb %d\n", tee-1);
-    //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
-    //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
     /* Start the two tasks as described in the comments at the top of this
     file. */
     //    xTaskCreate( vTask1,           /* The function that implements the task. */
@@ -235,9 +145,12 @@ int main()
 
    // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
-    xTaskCreate(vTask3, "Task3", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+    Serial pc(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
+    xTaskCreate(vTask4, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
+    xTaskCreate(vTask4, "Task2", mainDEFAULT_STACK_SIZE, &taskNumbers[1], mainTASK2_PRIORITY, NULL);
+    xTaskCreate(vTask4, "Task3", mainDEFAULT_STACK_SIZE, &taskNumbers[2], mainTASK3_PRIORITY, NULL);
 
-
+    pc.printf("AAA %d Hz, %d\n", SystemCoreClock, currentFrequencyLevel);
 
     /* Start the tasks and timer running. */
     vTaskStartScheduler();
@@ -420,15 +333,12 @@ void vTask3(void * pvParameters)
     int pvTaskNumber;
     pvTaskNumber = *(int *) pvParameters;
     
-
-    
     const TickType_t xDelay = *deadlines[pvTaskNumber] ;
     
     TickType_t xLastWakeTime;
     struct RTC_DATA now;
     int taskLed = ledCODES[pvTaskNumber];
 
-    //pc.printf("Starting task %d\n",*pvTaskNumber);
     xLastWakeTime = xTaskGetTickCount();
 
     for (;; ) {
@@ -436,10 +346,11 @@ void vTask3(void * pvParameters)
         *deadlines[pvTaskNumber]= (xLastWakeTime + xDelay);
         int aux = cycleConservingDVSTaskReady(pvTaskNumber, xTaskGetTickCount());
         LPC_GPIO1->FIOPIN = (1 << taskLed) | (LPC_GPIO1->FIOPIN & (1<<LED4));
-        //Serial pc(USBTX, USBRX);
-        //Serial pc(USBTX, USBRX);
 
-        // fibonnacciCalculation(1000);
+        // if(pvTaskNumber==2){
+        //     Serial pc(USBTX, USBRX);
+        //     pc.printf("AAA %d Hz, %d\n", SystemCoreClock, currentFrequencyLevel);
+        // }
 
         // if (led==0) {
         //     myled1=1;
@@ -450,53 +361,90 @@ void vTask3(void * pvParameters)
         //     led=0;
         // }
 
-        fibonnacciCalculation(1012000/(pvTaskNumber+1));
+        fibonnacciCalculation(1012000/(pvTaskNumber+3));
         if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
             LPC_GPIO1->FIOPIN = LPC_GPIO1->FIOPIN | (1<<LED4);
             contador++;
 
         }
         
-        //pc.printf("BLAA %d\n", xTaskGetTickCount());
-        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
-        //frequencyLevelSelector(8);
+
+
         aux = cycleConservingDVSTaskComplete(pvTaskNumber, xTaskGetTickCount());
-        // myled1=0;
+
         // pc.printf("Task %d, New deadline %d, level %d\n", *pvTaskNumber,*deadlines[*pvTaskNumber], xTaskGetTickCount());
-        // fibonnacciCalculation(100000);
-        // while(1);
-        // pc.printf("CCC %d\n",*pvTaskNumber);
+
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-        //myled2=0;
-        //vTaskDelay( xDelay );
 
     }
 }
+
+
+void vTask4(void * pvParameters)
+{
+    int pvTaskNumber;
+    pvTaskNumber = *(int *) pvParameters;
+    
+    const TickType_t xDelay = *deadlines[pvTaskNumber] ;
+    
+    TickType_t xLastWakeTime;
+    struct RTC_DATA now;
+    int taskLed = ledCODES[pvTaskNumber];
+
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;; ) {
+        
+        *deadlines[pvTaskNumber]= (xLastWakeTime + xDelay);
+
+        LPC_GPIO1->FIOPIN = (1 << taskLed) | (LPC_GPIO1->FIOPIN & (1<<LED4));
+
+        if(pvTaskNumber==1){
+        pc.printf("Current tick %d , %d last wake, %d next wake\n",xTaskGetTickCount(), xLastWakeTime, *deadlines[pvTaskNumber]);
+        contador++;
+        }
+
+        if(pvTaskNumber==2 && contador>30){
+            myled1=1;     
+            myled2=1;     
+            myled3=1;     
+            myled4=1;     
+            while(1);
+        }
+
+        fibonnacciCalculation(1012000/(pvTaskNumber+3));
+        if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+            LPC_GPIO1->FIOPIN = LPC_GPIO1->FIOPIN | (1<<LED4);
+            contador++;
+            while(1);
+        }
+        
+
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
+
+    }
+}
+
 
 #ifdef __cplusplus
 extern "C"
 #endif
 void vApplicationIdleHook(void)
 {
-    if (led==0) {
-        myled1=0;
-        myled2=0;
-        myled4=0;
-    }
-    else {
-        myled1=0;
-        myled2=0;
-        myled4=0;
+    // if (led==0) {
+    //     myled1=0;
+    //     myled2=0;
+    //     myled4=0;
+    // }
+    // else {
+    //     myled1=0;
+    //     myled2=0;
+    //     myled4=0;
         
-    }
-
+    // }
 
     Sleep();
-    //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
-    //wdt.kick(2);
-    //DeepSleep();
-    //PowerDown();
-    //DeepPowerDown();
+
 }
 
 #ifdef __cplusplus
