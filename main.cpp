@@ -95,10 +95,10 @@ int main(){
 
    // xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
-    // if(setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime) == -1) {
-    //     pc.printf("Taskset unfeasible %d\n", -1);
-    //     return 0;
-    // }
+    if(setupCycleConservingDVS(*deadlines, mainWorstCaseComputeTime) == -1) {
+        pc.printf("Taskset unfeasible %d\n", -1);
+        return 0;
+    }
     
     Serial pc(USBTX, USBRX); // Descobrir como arrumar o serial quando a frequencia muda
     xTaskCreate(vTask4, "Task1", mainDEFAULT_STACK_SIZE, &taskNumbers[0], mainTASK1_PRIORITY, NULL);
@@ -400,21 +400,25 @@ void vTask4(void * pvParameters)
         LPC_GPIO1->FIOPIN = (1 << taskLed) | (LPC_GPIO1->FIOPIN & (1<<LED4));
 
         if(pvTaskNumber==1){
-        pc.printf("Current tick %d , %d last wake, %d next wake\n",xTaskGetTickCount(), xLastWakeTime, *deadlines[pvTaskNumber]);
+        //pc.printf("Current tick %d , %d last wake, %d next wake\n",xTaskGetTickCount(), xLastWakeTime, *deadlines[pvTaskNumber]);
         contador++;
         }
 
-        if(pvTaskNumber==2 && contador>30){
-            myled1=1;     
-            myled2=1;     
-            myled3=1;     
-            myled4=1;     
-            while(1);
-        }
+        // if(pvTaskNumber==2 && contador>30){
+        //     myled1=1;     
+        //     myled2=1;     
+        //     myled3=1;     
+        //     myled4=1;     
+        //     while(1);
+        // }
 
         fibonnacciCalculation(1012000/(pvTaskNumber+3));
         if (xTaskGetTickCount()>(xLastWakeTime+ xDelay)) {
+            Serial pc(USBTX, USBRX);
+            fibonnacciCalculation(1012000);
             LPC_GPIO1->FIOPIN = LPC_GPIO1->FIOPIN | (1<<LED4);
+            pc.printf("Current tick %d , %d last wake, %d next wake\n",xTaskGetTickCount(), xLastWakeTime, *deadlines[pvTaskNumber]);
+            pc.printf("BBB %d Hz, %d\n", SystemCoreClock, currentFrequencyLevel);
             contador++;
             while(1);
         }
