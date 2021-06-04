@@ -99,10 +99,9 @@ extern void vConfigureTimerForRunTimeStats(void);
 
 /* System defined */
 #define configUSE_PREEMPTION 0
-#define configUSE_IDLE_HOOK 1
 #define configUSE_TICK_HOOK 0
 #define configCPU_CLOCK_HZ (SystemCoreClock)
-#define configTICK_RATE_HZ ((TickType_t)10)
+#define configTICK_RATE_HZ ((TickType_t)100)
 #define configMAX_PRIORITIES (5)
 #define configMINIMAL_STACK_SIZE ((unsigned short)128)
 #define configTOTAL_HEAP_SIZE ((size_t)(16 * 1024))
@@ -189,7 +188,8 @@ standard names. */
 #define configUSE_TIMERS 0
 //#define dynamicFrequencySysTickHandler SysTick_Handler
 #define portSUPPRESS_TICKS_AND_SLEEP(xIdleTime) vApplicationSleep(xIdleTime)
-#define configUSE_TICKLESS_IDLE 2
+#define configUSE_TICKLESS_IDLE 0
+#define configUSE_IDLE_HOOK 1
 
 #else
 #define xPortSysTickHandler SysTick_Handler
