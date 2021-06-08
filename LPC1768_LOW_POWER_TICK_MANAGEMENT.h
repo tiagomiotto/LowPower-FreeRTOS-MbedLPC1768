@@ -10,12 +10,12 @@ const uint8_t mValues[12] = {36, 33, 30, 27, 24, 18, 12, 9, 6, 3};
 const int frequencyLevels[] = {96, 88, 80, 72, 64, 48, 32, 24, 16, 8};
 const int staticTickIncrement[] = {0, 0, 0, 0, 0, 1, 2, 3, 5, 11};
 const int periodicTickIncrement[] = {0, 11, 5, 3, 2, 0, 0, 0, 0, 0};
-const short availableFrequencyLevels = 10;
-extern volatile int currentFrequencyLevel;
+// const short availableFrequencyLevels = 10;
+// extern volatile int currentFrequencyLevel;
 extern volatile short periodicTickIncrementCount;
 extern volatile bool frequencyChanged;
 
-void frequencyLevelSelector(int level);
+int frequencyLevelSelector(int level);
 
 void dynamicFrequencySysTickHandler(void);
 
@@ -40,15 +40,19 @@ unsigned int getPrescalarFor100Us(uint8_t timerPclkBit);
 
 #ifdef __cplusplus
 extern "C"
-#endif 
-	int
-	staticVoltageScalingFrequencyLevelSelector(int numberOfTasks,
-											   int *taskPeriods, int *taskWorstCaseComputeTime, int mode);
-bool staticVoltageScalingRM_Test(int numberOfTasks,
-								 int *taskPeriods, int *taskWorstCaseComputeTime, float alpha);
+#endif
+	void
+	setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode);
+void default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode);
 
-bool staticVoltageScalingEDF_Test(int numberOfTasks,
-								  int *taskPeriods, int *taskWorstCaseComputeTime, float alpha);
+int staticVoltageScalingFrequencyLevelSelector(void);
+bool staticVoltageScalingRM_Test(float alpha);
 
+bool staticVoltageScalingEDF_Test(float alpha);
 
+int setupCycleConservingDVS();
+static int cycleConservingDVSFrequencySelector(int currentTick);
+static void cycleConservingDVSAllocateCycles(int k);
+int cycleConservingDVSTaskReady(int taskNumber, int currentTick, int taskNextExecution);
+int cycleConservingDVSTaskComplete(int taskNumber, int currentTick);
 #endif

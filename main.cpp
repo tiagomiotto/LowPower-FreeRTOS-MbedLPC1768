@@ -25,11 +25,9 @@ DigitalOut myled4(LED4);
 
 #define ld2 18 // P2_1
 
-/* TIMER REGISTERS */
-#define T0TCR 0x40004004
-#define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
-#define T0PR 0x4000400C
-#define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
+/* Turn Off Magic Interface */
+
+#define magicINTERFACEDISABLE 0
 
 /*-----------------------------------------------------------*/
 void vTask1(void *pvParameters);
@@ -62,23 +60,17 @@ static void PrintTaskInfo();
 
 int main()
 {
-    int periods[3] = {8, 10, 14};
-    int compute[3] = {1, 3, 1};
+    int periods[1] = {100};
+    int compute[1] = {50};
+    default_setupDVFS(1, compute, periods, 0);
+    int test = staticVoltageScalingFrequencyLevelSelector();
+    pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
 
-    //int test = staticVoltageScalingFrequencyLevelSelector(3, periods, compute, 1);
-    //pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+    pc.printf("M level %d : %d MHz \n", *deadlines[0], *deadlines[1]);
 
-    //pc.printf("M level %d : %d MHz \n", *deadlines[0], *deadlines[1]);
-
+#if magicINTERFACEDISABLE == 1
     int result;
-    //    Watchdog wdt;
-    //
-    //        set_time(1256729737);
-    //    tm t2 = RTC::getDefaultTM();
-    //    t2.tm_min = 0;
-    //    t2.tm_sec = 3;
-    //
-    //
+
     // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
     // Check reset source register
     result = LPC_SC->RSID;
@@ -112,7 +104,8 @@ int main()
 
         /* Start the tasks and timer running. */
         vTaskStartScheduler();
-        for(;;);
+        for (;;)
+            ;
     }
     else
     {
@@ -127,13 +120,16 @@ int main()
         wait(1);
         NVIC_SystemReset();
     }
+
+#endif
+
     time_t t;
     srand((unsigned)time(&t));
     struct RTC_DATA now = defaultTime();
     initRTC(now);
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
-    //PHY_PowerDown();
+    PHY_PowerDown();
     //LPC_GPIO1->FIODIR = (1<<ld2);
     //RTC::alarm(&alarmFunction, t2);
 
@@ -259,8 +255,12 @@ void vTask2(void *pvParameters)
 
     for (;;)
     {
+
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
+#endif
         //*taskDeadline= xLastWakeTime + xDelay;
-    //myled4 = 1;
+        myled4 = 1;
 #ifdef DEBUG
         //myled4 = 1;
 #endif
@@ -323,6 +323,10 @@ void vTask2(void *pvParameters)
         // }
         contador++;
         //myled4=1;
+
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
+#endif
         vTaskDelayUntil(&xLastWakeTime, xDelay);
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);
     }
