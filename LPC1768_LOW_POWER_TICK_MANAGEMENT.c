@@ -107,17 +107,18 @@ LED3 = P1_21,
 LED4 = P1_23,
 */
 
-#ifdef DEBUG
+// #ifdef DEBUG
 
 #define configPRE_SLEEP_PROCESSING(x) \
 	LPC_GPIO1->FIOPIN = (1 << LED1);  \
 	Sleep();
 #define configPOST_SLEEP_PROCESSING(x) LPC_GPIO1->FIOPIN = (0 << LED1);
 
-#else
-#define configPRE_SLEEP_PROCESSING(x) Sleep();
+// #else
+// #define configPRE_SLEEP_PROCESSING(x) Sleep();
+// #define configPOST_SLEEP_PROCESSING(x) LPC_GPIO1->FIOPIN = (0 << LED1);
 
-#endif
+// #endif
 
 int frequencyLevelSelector(int level)
 {
@@ -129,7 +130,7 @@ int frequencyLevelSelector(int level)
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
 	frequencyChanged = true;
-	return frequencyStages[level];
+	return level;
 }
 
 /*
@@ -489,7 +490,11 @@ extern "C"
 	frequencyStages = main_frequencyStages;
 }
 
-void default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode)
+#ifdef __cplusplus
+extern "C"
+#endif
+	void
+	default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode)
 {
 	numberOfTasks = main_numberOfTasks;
 	taskWorstCaseComputeTime = main_taskWorstCaseComputeTime;
@@ -499,9 +504,11 @@ void default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTim
 	frequencyStages = default_frequencyStages;
 }
 
-int
-
-staticVoltageScalingFrequencyLevelSelector()
+#ifdef __cplusplus
+extern "C"
+#endif
+	int
+	staticVoltageScalingFrequencyLevelSelector()
 {
 
 	float alphaToTest = 0.0f;
@@ -531,7 +538,7 @@ staticVoltageScalingFrequencyLevelSelector()
 	selectedFrequencyLevel = i - 1;
 	currentFrequencyLevel = selectedFrequencyLevel;
 	return frequencyLevelSelect(selectedFrequencyLevel);
-	//return currentFrequencyLevel;
+	// return currentFrequencyLevel;
 	// }
 
 	// if (mode == 1) //EDF
@@ -626,7 +633,7 @@ int setupCycleConservingDVS()
 		c_lefti[i] = taskWorstCaseComputeTime[i];
 	}
 
-	return 0;
+	return frequencyChosenSVS;
 }
 
 //Changed number of Tasks to local

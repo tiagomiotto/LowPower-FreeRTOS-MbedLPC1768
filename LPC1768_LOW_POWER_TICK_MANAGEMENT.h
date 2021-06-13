@@ -43,9 +43,19 @@ extern "C"
 #endif
 	void
 	setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode);
-void default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode);
 
-int staticVoltageScalingFrequencyLevelSelector(void);
+#ifdef __cplusplus
+extern "C"
+#endif
+	void
+	default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+	int
+	staticVoltageScalingFrequencyLevelSelector(void);
+
 bool staticVoltageScalingRM_Test(float alpha);
 
 bool staticVoltageScalingEDF_Test(float alpha);

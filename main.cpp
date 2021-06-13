@@ -27,7 +27,7 @@ DigitalOut myled4(LED4);
 
 /* Turn Off Magic Interface */
 
-#define magicINTERFACEDISABLE 0
+#define magicINTERFACEDISABLE 1
 
 /*-----------------------------------------------------------*/
 void vTask1(void *pvParameters);
@@ -49,6 +49,8 @@ volatile tm t3;
 #define minDivider 1
 
 //DEBUG VARIABLES
+DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
+
 char ptrTaskList[500] = {0};
 static void PrintTaskInfo();
 //Changed min stack size to 300
@@ -62,65 +64,69 @@ int main()
 {
     int periods[1] = {100};
     int compute[1] = {50};
-    default_setupDVFS(1, compute, periods, 0);
-    int test = staticVoltageScalingFrequencyLevelSelector();
-    pc.printf(" Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
 
-    pc.printf("M level %d : %d MHz \n", *deadlines[0], *deadlines[1]);
+    default_setupDVFS(1, compute, periods, 0);
+    // int test = staticVoltageScalingFrequencyLevelSelector();
+    // wait(1);
+    // Serial pc(USBTX, USBRX);
+    // pc.printf("Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
+    // pc.printf("M level %d : %d MHz \n", *deadlines[0], SystemCoreClock);
 
 #if magicINTERFACEDISABLE == 1
-    int result;
-
-    // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
-    // Check reset source register
-    result = LPC_SC->RSID;
-    if ((result & 0x03) == 0)
+    int usbCONNECTED = vUSBIN;
+    if (usbCONNECTED == 0)
     {
-        // was not POR or reset pushbutton so
-        // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
-        time_t t;
-        srand((unsigned)time(&t));
-        struct RTC_DATA now = defaultTime();
-        initRTC(now);
+        int result;
+        // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
+        // Check reset source register
+        result = LPC_SC->RSID;
+        if ((result & 0x03) == 0)
+        {
+            // was not POR or reset pushbutton so
+            // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
+            time_t t;
+            srand((unsigned)time(&t));
+            struct RTC_DATA now = defaultTime();
+            initRTC(now);
 
-        KIN1_InitCycleCounter(); /* enable DWT hardware */
-        PHY_PowerDown();
-        //LPC_GPIO1->FIODIR = (1<<ld2);
-        //RTC::alarm(&alarmFunction, t2);
+            KIN1_InitCycleCounter(); /* enable DWT hardware */
+            PHY_PowerDown();
+            //LPC_GPIO1->FIODIR = (1<<ld2);
+            //RTC::alarm(&alarmFunction, t2);
 
-        //pc.printf("bbbb %d\n", tee-1);
-        //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
-        //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
-        /* Start the two tasks as described in the comments at the top of this
+            //pc.printf("bbbb %d\n", tee-1);
+            //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
+            //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
+            /* Start the two tasks as described in the comments at the top of this
     file. */
-        //    xTaskCreate( vTask1,           /* The function that implements the task. */
-        //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
-        //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
-        //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
-        //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
-        //                 NULL );                         /* The task handle is not required, so NULL is passed. */
+            //    xTaskCreate( vTask1,           /* The function that implements the task. */
+            //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
+            //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
+            //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
+            //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
+            //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-        xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+            xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
 
-        /* Start the tasks and timer running. */
-        vTaskStartScheduler();
-        for (;;)
-            ;
+            /* Start the tasks and timer running. */
+            vTaskStartScheduler();
+            for (;;)
+                ;
+        }
+        else
+        {
+            // Was an initial manual or Power on Reset
+            // This codes only executes the first time after initial POR or button reset
+            LPC_SC->RSID = 0x0F;
+            // Clear reset source register bits for next reset
+            myled2 = 1;
+            result = mbed_interface_powerdown();
+            // Now can do a reset to free mbed of debug mode
+            // NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
+            wait(1);
+            NVIC_SystemReset();
+        }
     }
-    else
-    {
-        // Was an initial manual or Power on Reset
-        // This codes only executes the first time after initial POR or button reset
-        LPC_SC->RSID = 0x0F;
-        // Clear reset source register bits for next reset
-        myled2 = 1;
-        result = mbed_interface_powerdown();
-        // Now can do a reset to free mbed of debug mode
-        // NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
-        wait(1);
-        NVIC_SystemReset();
-    }
-
 #endif
 
     time_t t;
@@ -259,8 +265,10 @@ void vTask2(void *pvParameters)
 #if POWERSAVINGMODE == 3
         cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
 #endif
+
         //*taskDeadline= xLastWakeTime + xDelay;
         myled4 = 1;
+
 #ifdef DEBUG
         //myled4 = 1;
 #endif
