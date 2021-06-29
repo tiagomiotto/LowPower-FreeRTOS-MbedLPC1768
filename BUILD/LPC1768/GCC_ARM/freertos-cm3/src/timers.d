@@ -9,4 +9,4 @@ BUILD\LPC1768\GCC_ARM\freertos-cm3\src\timers.o: \
  freertos-cm3/src/portable/RVDS/ARM_CM3/portmacro.h \
  freertos-cm3/src/include/mpu_wrappers.h freertos-cm3/src/include/task.h \
  freertos-cm3/src/include/list.h freertos-cm3/src/include/queue.h \
- freertos-cm3/src/include/timers.h freertos-cm3/src/include/task.h
+ freertos-cm3/src/include/task.h freertos-cm3/src/include/timers.h

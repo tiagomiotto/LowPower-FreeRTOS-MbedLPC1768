@@ -267,35 +267,36 @@ void vTask2(void *pvParameters)
 #endif
 
         //*taskDeadline= xLastWakeTime + xDelay;
+        myled=0;
         myled4 = 1;
 
-#ifdef DEBUG
-        //myled4 = 1;
-#endif
+// #ifdef DEBUG
+//         //myled4 = 1;
+// #endif
 
-#ifdef cycleCounter
-        KIN1_ResetCycleCounter();  /* reset cycle counter */
-        KIN1_EnableCycleCounter(); /* start counting */
-        n = fibonnacciCalculation(cycles);
-#ifdef DEBUG
-        end = KIN1_GetCycleCounter(); /* get cycle counter */
-        double timeInMs = end / (SystemCoreClock / 1000.0);
-        pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
-                  "%lf ms \n",
-                  end, SystemCoreClock, n, timeInMs);
-#endif
+// #ifdef cycleCounter
+//         KIN1_ResetCycleCounter();  /* reset cycle counter */
+//         KIN1_EnableCycleCounter(); /* start counting */
+//         n = fibonnacciCalculation(cycles);
+// #ifdef DEBUG
+//         end = KIN1_GetCycleCounter(); /* get cycle counter */
+//         double timeInMs = end / (SystemCoreClock / 1000.0);
+//         pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
+//                   "%lf ms \n",
+//                   end, SystemCoreClock, n, timeInMs);
+// #endif
 
-#else
-        begin = xTaskGetTickCount();
-        n = fibonnacciCalculation(cycles);
-        end = xTaskGetTickCount();
-#ifdef DEBUG
-        double timeInMs = (end - begin) * portTICK_PERIOD_MS;
-        pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
-                  "%lf, %ld prescalar, %ld Tick Count ms\n",
-                  end - begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR, end);
-#endif
-#endif
+// #else
+//         begin = xTaskGetTickCount();
+//         n = fibonnacciCalculation(cycles);
+//         end = xTaskGetTickCount();
+// #ifdef DEBUG
+//         double timeInMs = (end - begin) * portTICK_PERIOD_MS;
+//         pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+//                   "%lf, %ld prescalar, %ld Tick Count ms\n",
+//                   end - begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR, end);
+// #endif
+// #endif
 
         //pc.printf(" \n");
         //if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) myled2=1;
@@ -330,7 +331,8 @@ void vTask2(void *pvParameters)
 
         // }
         contador++;
-        //myled4=1;
+        myled4=0;
+        myled=1;
 
 #if POWERSAVINGMODE == 3
         cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
@@ -346,20 +348,20 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    if (led == 0)
-    {
-        myled = 0;
-        myled1 = 0;
-        myled4 = 0;
-    }
-    else
-    {
-        myled = 0;
-        myled1 = 0;
-        myled4 = 0;
-    }
+    // if (led == 0)
+    // {
+    //     myled = 0;
+    //     myled1 = 0;
+    //     myled4 = 0;
+    // }
+    // else
+    // {
+    //     myled = 0;
+    //     myled1 = 0;
+    //     myled4 = 0;
+    // }
 
-    Sleep();
+    //Sleep();
     //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
 
     //DeepSleep();
@@ -384,7 +386,7 @@ extern "C"
 #endif
     void
     vApplicationStackOverflowHook(TaskHandle_t xTask,
-                                  signed char *pcTaskName)
+                                    char *pcTaskName)
 {
     while (1)
     {

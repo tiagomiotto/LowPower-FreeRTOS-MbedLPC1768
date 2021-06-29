@@ -8,4 +8,4 @@ BUILD\LPC1768\GCC_ARM\freertos-cm3\src\tasks.o: freertos-cm3\src\tasks.c \
  freertos-cm3/src/portable/RVDS/ARM_CM3/portmacro.h \
  freertos-cm3/src/include/mpu_wrappers.h freertos-cm3/src/include/task.h \
  freertos-cm3/src/include/list.h freertos-cm3/src/include/timers.h \
- freertos-cm3/src/include/task.h freertos-cm3/src/include/StackMacros.h
+ freertos-cm3/src/include/task.h freertos-cm3/src/include/stack_macros.h
