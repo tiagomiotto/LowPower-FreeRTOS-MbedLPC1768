@@ -50,10 +50,10 @@ demo, or 0 to run the more comprehensive test and demo application. */
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
 
-extern volatile unsigned long ulHighFrequencyTimerTicks;
-extern void vConfigureTimerForRunTimeStats(void);
-#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
-#define portGET_RUN_TIME_COUNTER_VALUE() LPC_TIM0->TC
+// extern volatile unsigned long ulHighFrequencyTimerTicks;
+// extern void vConfigureTimerForRunTimeStats(void);
+// #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
+// #define portGET_RUN_TIME_COUNTER_VALUE() LPC_TIM0->TC
 
 /* TIMER REGISTERS */
 #define T0TCR 0x40004004
@@ -86,7 +86,7 @@ extern void vConfigureTimerForRunTimeStats(void);
 #define configUSE_MALLOC_FAILED_HOOK 1 //changed for debug
 #define configUSE_APPLICATION_TASK_TAG 0
 #define configUSE_COUNTING_SEMAPHORES 1
-#define configGENERATE_RUN_TIME_STATS 1
+#define configGENERATE_RUN_TIME_STATS 0
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 0

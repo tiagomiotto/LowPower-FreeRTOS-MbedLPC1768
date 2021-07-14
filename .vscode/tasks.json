@@ -2,7 +2,7 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "name": "make",
+    "name": "mbed",
     "problemMatcher": {
         "owner": "cpp",
         "fileLocation": ["relative", "${workspaceRoot}/mbed-os"],
@@ -15,23 +15,21 @@
             "message": 5
         }
     },
-    "args": ["-j"],
+    "args": [],
     "linux": {
-        "command": "make"
+        "command": "mbed"
     },
     "osx": {
-        "command": "make"
+        "command": "mbed"
     },
     "windows": {
-        "command": "make.exe"
+        "command": "mbed"
     },
     "tasks": [
         {
-            "label": "make.exe",
+            "label": "mbed.exe",
             "type": "shell",
-            "args": [
-                "-j"
-            ],
+            "args": ["compile", "--profile=debug", "-t", "GCC_ARM", "-m", "LPC1768"],
             "problemMatcher": {
                 "owner": "cpp",
                 "fileLocation": [

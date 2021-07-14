@@ -18,8 +18,8 @@
 
 //#define cycleCounter 1
 
-DigitalOut myled(LED1);
-DigitalOut myled1(LED3);
+DigitalOut myled1(LED1);
+DigitalOut myled3(LED3);
 DigitalOut myled2(LED2);
 DigitalOut myled4(LED4);
 
@@ -32,13 +32,19 @@ DigitalOut myled4(LED4);
 /*-----------------------------------------------------------*/
 void vTask1(void *pvParameters);
 void vTask2(void *pvParameters);
-void vTask3(void *pvParameters);
+void vTaskFibonnaciFixedTime210ms(void *pvParameters);
+void vTaskFibonnaciFixedTime420ms(void *pvParameters);
 Serial pc(USBTX, USBRX);
 int led = 0;
 volatile long contador = 0;
 volatile long deadline1 = 0;
 volatile long deadline2 = 0;
 volatile long dealine3 = 0;
+
+/* Test application timers */
+int fixedFibonnaciTaskPeriod210ms = 1000;
+int fixedFibonnaciTaskPeriod420ms = 2000;
+int dynamicFibonnaciTaskPeriod = 500;
 
 /* DVFS Variables*/
 //uint8_t DVFS_ON=1;
@@ -151,7 +157,9 @@ int main()
     //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
     //                 NULL );                         /* The task handle is not required, so NULL is passed. */
 
-    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
+    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, 3, NULL);
+    //xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 2, NULL);
+    //xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 2, NULL);
 
     /* Start the tasks and timer running. */
     vTaskStartScheduler();
@@ -213,38 +221,59 @@ void vTask1(void *pvParameters)
     }
 }
 
-void vTask3(void *pvParameters)
+void vTaskFibonnaciFixedTime210ms(void *pvParameters)
 {
-    const TickType_t xDelay = 1500 / portTICK_PERIOD_MS;
+    int *intPvParameters = (int *)pvParameters;
+    int delayinMs = intPvParameters[0];
+    const TickType_t xDelay = delayinMs / portTICK_PERIOD_MS;
     TickType_t xLastWakeTime;
-    struct RTC_DATA now;
-
+    int cycles = 1012000; //Takes around 210ms at 96Mhz
     xLastWakeTime = xTaskGetTickCount();
+    long n; //Needed otherwise the compiler skips the fibonacci calculation
     for (;;)
     {
-        deadline1 = xLastWakeTime + xDelay;
-        if (led == 0)
-        {
-            myled = 0;
-            led = 1;
-        }
+vTaskDelayUntil(&xLastWakeTime, xDelay);
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
+#endif
+        if (myled2 == 0)
+            myled2 = 1;
         else
-        {
-            myled1 = 0;
-            led = 0;
-        }
-
-        if (xTaskGetTickCount() > (xLastWakeTime + xDelay))
-        {
-            //myled2=1;
-            contador++;
-        }
-        now = getTime();
-
-        //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
+            myled2 = 0;
+        n = fibonnacciCalculation(cycles);
+        pc.printf("Delay : %d\n", xDelay);
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
+#endif
         vTaskDelayUntil(&xLastWakeTime, xDelay);
-        //myled =0;
-        //vTaskDelay( xDelay );
+    }
+}
+
+void vTaskFibonnaciFixedTime420ms(void *pvParameters)
+{
+    int *intPvParameters = (int *)pvParameters;
+    int delayinMs = intPvParameters[0];
+    const TickType_t xDelay = delayinMs / portTICK_PERIOD_MS;
+    TickType_t xLastWakeTime;
+    int cycles = 1012000; //Takes around 210ms at 96Mhz
+    xLastWakeTime = xTaskGetTickCount();
+    long n; //Needed otherwise the compiler skips the fibonacci calculation
+    for (;;)
+    {
+ vTaskDelayUntil(&xLastWakeTime, xDelay);
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
+#endif
+        if (myled3 == 0)
+            myled3 = 1;
+        else
+            myled3 = 0;
+        n = fibonnacciCalculation(cycles);
+        pc.printf("Delay : %d\n", delayinMs);
+#if POWERSAVINGMODE == 3
+        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
+#endif
+       
     }
 }
 
@@ -267,36 +296,38 @@ void vTask2(void *pvParameters)
 #endif
 
         //*taskDeadline= xLastWakeTime + xDelay;
-        myled=0;
-        myled4 = 1;
+        if (myled1 == 0)
+            myled1 = 1;
+        else
+            myled1 = 0;
 
-// #ifdef DEBUG
-//         //myled4 = 1;
-// #endif
+        // #ifdef DEBUG
+        //         //myled4 = 1;
+        // #endif
 
-// #ifdef cycleCounter
-//         KIN1_ResetCycleCounter();  /* reset cycle counter */
-//         KIN1_EnableCycleCounter(); /* start counting */
-//         n = fibonnacciCalculation(cycles);
-// #ifdef DEBUG
-//         end = KIN1_GetCycleCounter(); /* get cycle counter */
-//         double timeInMs = end / (SystemCoreClock / 1000.0);
-//         pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
-//                   "%lf ms \n",
-//                   end, SystemCoreClock, n, timeInMs);
-// #endif
+        // #ifdef cycleCounter
+        //         KIN1_ResetCycleCounter();  /* reset cycle counter */
+        //         KIN1_EnableCycleCounter(); /* start counting */
+        //         n = fibonnacciCalculation(cycles);
+        // #ifdef DEBUG
+        //         end = KIN1_GetCycleCounter(); /* get cycle counter */
+        //         double timeInMs = end / (SystemCoreClock / 1000.0);
+        //         pc.printf("Took %ld cycles at %ld to calculate %ld, resulting in a compute time of "
+        //                   "%lf ms \n",
+        //                   end, SystemCoreClock, n, timeInMs);
+        // #endif
 
-// #else
-//         begin = xTaskGetTickCount();
-//         n = fibonnacciCalculation(cycles);
-//         end = xTaskGetTickCount();
-// #ifdef DEBUG
-//         double timeInMs = (end - begin) * portTICK_PERIOD_MS;
-//         pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
-//                   "%lf, %ld prescalar, %ld Tick Count ms\n",
-//                   end - begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR, end);
-// #endif
-// #endif
+        // #else
+        //         begin = xTaskGetTickCount();
+        //         n = fibonnacciCalculation(cycles);
+        //         end = xTaskGetTickCount();
+        // #ifdef DEBUG
+        //         double timeInMs = (end - begin) * portTICK_PERIOD_MS;
+        //         pc.printf("Took %ld ticks at %ld to calculate %ld, resulting in a compute time of "
+        //                   "%lf, %ld prescalar, %ld Tick Count ms\n",
+        //                   end - begin, SystemCoreClock, n, timeInMs, LPC_TIM1->PR, end);
+        // #endif
+        // #endif
 
         //pc.printf(" \n");
         //if(xTaskGetTickCount()>(xLastWakeTime+ xDelay)) myled2=1;
@@ -308,7 +339,7 @@ void vTask2(void *pvParameters)
         //PrintTaskInfo();
         //now = getTime();
 
-        //pc.printf("Hello world %d\n", contador);
+        pc.printf("Hello world %d\n", contador);
         //pc.printf("Time: %2d:%2d:%2d\n",now.hour,now.min,now.sec);
         //pc.printf("%d ms,%d ticks, %d last, %d deadline1, %d deadline2\n",cycles,xTaskGetTickCount(), xLastWakeTime, deadline1,deadline2);
         //pc.printf("%d ticks, %d idle time, %d deadline2\n",xTaskGetTickCount(),useridleTime,deadline2);
@@ -331,8 +362,8 @@ void vTask2(void *pvParameters)
 
         // }
         contador++;
-        myled4=0;
-        myled=1;
+        // myled4 = 0;
+        // myled1 = 1;
 
 #if POWERSAVINGMODE == 3
         cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
@@ -348,22 +379,7 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    // if (led == 0)
-    // {
-    //     myled = 0;
-    //     myled1 = 0;
-    //     myled4 = 0;
-    // }
-    // else
-    // {
-    //     myled = 0;
-    //     myled1 = 0;
-    //     myled4 = 0;
-    // }
-
     //Sleep();
-    //pc.printf("%d ticks, %d deadline1, %d deadline2\n",xTaskGetTickCount(),deadline1,deadline2);
-
     //DeepSleep();
     //PowerDown();
     //DeepPowerDown();
@@ -386,7 +402,7 @@ extern "C"
 #endif
     void
     vApplicationStackOverflowHook(TaskHandle_t xTask,
-                                    char *pcTaskName)
+                                  char *pcTaskName)
 {
     while (1)
     {
@@ -394,49 +410,49 @@ extern "C"
     }
 }
 
-/* Defined in main.c. */
-#ifdef __cplusplus
-extern "C"
-#endif
-    void
-    vConfigureTimerForRunTimeStats(void)
-{
-    const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
+// /* Defined in main.c. */
+// #ifdef __cplusplus
+// extern "C"
+// #endif
+//     void
+//     vConfigureTimerForRunTimeStats(void)
+// {
+//     const unsigned long TCR_COUNT_RESET = 2, CTCR_CTM_TIMER = 0x00, TCR_COUNT_ENABLE = 0x01;
 
-    /* This function configures a timer that is used as the time base when
-    collecting run time statistical information - basically the percentage
-    of CPU time that each task is utilising.  It is called automatically when
-    the scheduler is started (assuming configGENERATE_RUN_TIME_STATS is set
-    to 1). */
+//     /* This function configures a timer that is used as the time base when
+//     collecting run time statistical information - basically the percentage
+//     of CPU time that each task is utilising.  It is called automatically when
+//     the scheduler is started (assuming configGENERATE_RUN_TIME_STATS is set
+//     to 1). */
 
-    /* Power up and feed the timer. */
-    LPC_SC->PCONP |= 0x02UL;
-    LPC_SC->PCLKSEL0 = (LPC_SC->PCLKSEL0 & (~(0x3 << 2))) | (0x01 << 2);
+//     /* Power up and feed the timer. */
+//     LPC_SC->PCONP |= 0x02UL;
+//     LPC_SC->PCLKSEL0 = (LPC_SC->PCLKSEL0 & (~(0x3 << 2))) | (0x01 << 2);
 
-    /* Reset Timer 0 */
-    LPC_TIM0->TCR = TCR_COUNT_RESET;
+//     /* Reset Timer 0 */
+//     LPC_TIM0->TCR = TCR_COUNT_RESET;
 
-    /* Just count up. */
-    LPC_TIM0->CTCR = CTCR_CTM_TIMER;
+//     /* Just count up. */
+//     LPC_TIM0->CTCR = CTCR_CTM_TIMER;
 
-    /* Prescale to a frequency that is good enough to get a decent resolution,
-    but not too fast so as to overflow all the time. */
-    LPC_TIM0->PR = (configCPU_CLOCK_HZ / 10000UL) - 1UL;
+//     /* Prescale to a frequency that is good enough to get a decent resolution,
+//     but not too fast so as to overflow all the time. */
+//     LPC_TIM0->PR = (configCPU_CLOCK_HZ / 10000UL) - 1UL;
 
-    /* Start the counter. */
-    LPC_TIM0->TCR = TCR_COUNT_ENABLE;
-}
+//     /* Start the counter. */
+//     LPC_TIM0->TCR = TCR_COUNT_ENABLE;
+// }
 
-static void PrintTaskInfo()
-{
+// static void PrintTaskInfo()
+// {
 
-    pc.printf("**********************************\n");
-    pc.printf("Task  State   Prio    Stack    Num\n");
-    pc.printf("**********************************\n");
-    vTaskList(ptrTaskList);
-    pc.printf(ptrTaskList);
-    pc.printf("**********************************\n");
-}
+//     pc.printf("**********************************\n");
+//     pc.printf("Task  State   Prio    Stack    Num\n");
+//     pc.printf("**********************************\n");
+//     vTaskList(ptrTaskList);
+//     pc.printf(ptrTaskList);
+//     pc.printf("**********************************\n");
+// }
 
 /* 
 * Pre sleep processing for tickless
