@@ -2,6 +2,7 @@
 #define LPC1768PTM
 
 #include <stdbool.h>
+#include "FreeRTOS.h"
 /*
  * The tick hook function.  This compensates
  * the tick count to compensate for frequency changes
@@ -65,4 +66,6 @@ static int cycleConservingDVSFrequencySelector(int currentTick);
 static void cycleConservingDVSAllocateCycles(int k);
 int cycleConservingDVSTaskReady(int taskNumber, int currentTick, int taskNextExecution);
 int cycleConservingDVSTaskComplete(int taskNumber, int currentTick);
+
+void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode);
 #endif

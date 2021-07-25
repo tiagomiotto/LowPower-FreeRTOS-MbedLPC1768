@@ -57,6 +57,7 @@ const int default_availableFrequencyLevels = 8;
 // volatile int currentFrequencyLevel = 0;
 volatile short periodicTickIncrementCount = 0;
 volatile bool frequencyChanged = false;
+volatile bool cycleConservingUsed = false;
 
 // extern int *deadlines[];
 // extern int mainTaskPeriods[];
@@ -171,24 +172,6 @@ void dynamicFrequencySysTickHandler(void)
 		updatePrescalerTIMER1();
 		frequencyChanged = false;
 	}
-
-	// short extraTicks = staticTickIncrement[currentFrequencyLevel];
-	// if (periodicTickIncrementCount == periodicTickIncrement[currentFrequencyLevel] && periodicTickIncrement[currentFrequencyLevel] != 0)
-	// {
-	// 	extraTicks++;
-	// 	periodicTickIncrementCount = 0;
-	// }
-
-	// for (int i = 0; i < extraTicks; i++)
-	// {
-	// 	/* Increment the RTOS tick. */
-	// 	if (xTaskIncrementTick() != pdFALSE)
-	// 	{
-	// 		/* A context switch is required.  Context switching is performed in
-	// 		the PendSV interrupt.  Pend the PendSV interrupt. */
-	// 		portNVIC_INT_CTRL_REG = portNVIC_PENDSVSET_BIT;
-	// 	}
-	// }
 
 	periodicTickIncrementCount++;
 
@@ -632,7 +615,7 @@ int setupCycleConservingDVS()
 	{
 		c_lefti[i] = taskWorstCaseComputeTime[i];
 	}
-
+	cycleConservingUsed = true;
 	return frequencyChosenSVS;
 }
 
@@ -780,4 +763,29 @@ int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime,
 	}
 	return 0;
 	//implement feasibility test
+}
+
+void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
+{
+
+	switch (mode)
+	{
+	//Sleep on idle
+	case 0:
+		break;
+	//
+	case 1:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		if (!staticVoltageScalingFrequencyLevelSelector())
+			return -3;
+		break;
+	//Cycle Conserving no Tickless
+	case 2:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		if (!setupCycleConservingDVS())
+			return -2;
+		break;
+	}
+
+	vTaskStartScheduler();
 }
