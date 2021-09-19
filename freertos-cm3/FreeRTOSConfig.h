@@ -43,9 +43,9 @@ extern uint32_t SystemCoreClock;
 
 /* Set configDYNAMIC_FREQUENCY_LOW_POWER_MODE to one to run the simple blinky low power
 demo, or 0 to run the more comprehensive test and demo application. */
-#define configDYNAMIC_FREQUENCY_LOW_POWER_MODE 0
+#define configDYNAMIC_FREQUENCY_LOW_POWER_MODE 1
 
-//#define DEBUG 1
+// #define DEBUG 1
 
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
@@ -55,19 +55,19 @@ demo, or 0 to run the more comprehensive test and demo application. */
 // #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
 // #define portGET_RUN_TIME_COUNTER_VALUE() LPC_TIM0->TC
 
-/* TIMER REGISTERS */
-#define T0TCR 0x40004004
-#define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
-#define READ_T0TCR() (*(volatile uint32_t *)T0TCR)
-#define T0PR 0x4000400C
-#define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
+// /* TIMER REGISTERS */
+// #define T0TCR 0x40004004
+// #define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
+// #define READ_T0TCR() (*(volatile uint32_t *)T0TCR)
+// #define T0PR 0x4000400C
+// #define WRITE_T0PR(val) ((*(volatile uint32_t *)T0PR) = (val))
 
-#define configUSE_STATS_FORMATTING_FUNCTIONS 1
-#define configSUPPORT_DYNAMIC_ALLOCATION 1
+// #define configUSE_STATS_FORMATTING_FUNCTIONS 1
+// #define configSUPPORT_DYNAMIC_ALLOCATION 1
 //#define configSYSTICK_CLOCK_HZ
 
 /* System defined */
-#define configUSE_PREEMPTION 0
+#define configUSE_PREEMPTION 1
 #define configUSE_TICK_HOOK 0
 #define configUSE_IDLE_HOOK 1
 #define configCPU_CLOCK_HZ (SystemCoreClock)
@@ -156,17 +156,17 @@ standard names. */
 #define configTICK_RATE_HZ (100)
 #define configEXPECTED_IDLE_TIME_BEFORE_SLEEP (20 + 1) /* ( ( 200 / portTICK_PERIOD_MS ) + 1 ) written out pre-processed to enable #error statements to check its value. */
 #define configUSE_TIMERS 0
-//#define dynamicFrequencySysTickHandler SysTick_Handler
+#define dynamicFrequencySysTickHandler SysTick_Handler
 #define portSUPPRESS_TICKS_AND_SLEEP(xIdleTime) vApplicationSleep(xIdleTime)
-#define configUSE_TICKLESS_IDLE 2
+#define configUSE_TICKLESS_IDLE 0
 #define configUSE_IDLE_HOOK 0
-#define frequencyLevelSelect(x) frequencyLevelSelector(x)
+
 
 #else
 #define xPortSysTickHandler SysTick_Handler
 
 #endif
 
-#define numberOFTASKS 3
+
 
 #endif /* FREERTOS_CONFIG_H */

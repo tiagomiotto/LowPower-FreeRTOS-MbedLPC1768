@@ -34,6 +34,7 @@ void vTask1(void *pvParameters);
 void vTask2(void *pvParameters);
 void vTaskFibonnaciFixedTime210ms(void *pvParameters);
 void vTaskFibonnaciFixedTime420ms(void *pvParameters);
+void vTaskFibonnaciDynamicTime(void *pvParameters);
 Serial pc(USBTX, USBRX);
 int led = 0;
 volatile long contador = 0;
@@ -42,9 +43,15 @@ volatile long deadline2 = 0;
 volatile long dealine3 = 0;
 
 /* Test application timers */
-int fixedFibonnaciTaskPeriod210ms = 1000;
-int fixedFibonnaciTaskPeriod420ms = 2000;
-int dynamicFibonnaciTaskPeriod = 500;
+//Barelly schedullable, expected to see SVS high and CCRTDVS low
+
+// Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
+//Add the conversion to ticks ( it is currently in ticks but we want in ms)
+int fixedFibonnaciTaskPeriod210ms = 100;
+int fixedFibonnaciTaskPeriod420ms = 200;
+int dynamicFibonnaciTaskPeriod = 300;
+bool ConsumptionTest = false;
+bool deadlinesMissed = false;
 
 /* DVFS Variables*/
 //uint8_t DVFS_ON=1;
@@ -53,13 +60,9 @@ extern int test;
 extern TickType_t useridleTime;
 volatile tm t3;
 #define minDivider 1
-
+PwmOut PWM1(p21);
 //DEBUG VARIABLES
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
-
-char ptrTaskList[500] = {0};
-static void PrintTaskInfo();
-//Changed min stack size to 300
 
 /* bit position of CCR register */
 #define SBIT_CLKEN 0  /* RTC Clock Enable*/
@@ -68,15 +71,7 @@ static void PrintTaskInfo();
 
 int main()
 {
-    int periods[1] = {100};
-    int compute[1] = {50};
-
-    default_setupDVFS(1, compute, periods, 0);
-    // int test = staticVoltageScalingFrequencyLevelSelector();
-    // wait(1);
-    // Serial pc(USBTX, USBRX);
-    // pc.printf("Frequency chosen by SVS RM level %d : %d MHz \n", test, frequencyLevels[test]);
-    // pc.printf("M level %d : %d MHz \n", *deadlines[0], SystemCoreClock);
+#define DVFSMODE 2
 
 #if magicINTERFACEDISABLE == 1
     int usbCONNECTED = vUSBIN;
@@ -90,32 +85,25 @@ int main()
         {
             // was not POR or reset pushbutton so
             // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
-            time_t t;
-            srand((unsigned)time(&t));
-            struct RTC_DATA now = defaultTime();
-            initRTC(now);
 
             KIN1_InitCycleCounter(); /* enable DWT hardware */
             PHY_PowerDown();
-            //LPC_GPIO1->FIODIR = (1<<ld2);
-            //RTC::alarm(&alarmFunction, t2);
 
-            //pc.printf("bbbb %d\n", tee-1);
-            //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
-            //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
-            /* Start the two tasks as described in the comments at the top of this
-    file. */
-            //    xTaskCreate( vTask1,           /* The function that implements the task. */
-            //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
-            //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
-            //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
-            //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
-            //                 NULL );                         /* The task handle is not required, so NULL is passed. */
+            xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
+            xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
+            xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
+            int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+            int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+            int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 8};
+            //ConsumptionTest = true;
+            // #define POWERSAVINGMODE  3
 
-            xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, mainTASK2_PRIORITY, NULL);
-
-            /* Start the tasks and timer running. */
+            //wait(5);
+            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+            wait(3);
             vTaskStartScheduler();
+            /* Start the tasks and timer running. */
+            // vTaskStartScheduler();
             for (;;)
                 ;
         }
@@ -125,7 +113,7 @@ int main()
             // This codes only executes the first time after initial POR or button reset
             LPC_SC->RSID = 0x0F;
             // Clear reset source register bits for next reset
-            myled2 = 1;
+            //myled2 = 1;
             result = mbed_interface_powerdown();
             // Now can do a reset to free mbed of debug mode
             // NXP manual says must exit debug mode and reset for DeepSleep or lower power levels to wakeup
@@ -142,27 +130,22 @@ int main()
 
     KIN1_InitCycleCounter(); /* enable DWT hardware */
     PHY_PowerDown();
-    //LPC_GPIO1->FIODIR = (1<<ld2);
-    //RTC::alarm(&alarmFunction, t2);
+ //xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 4, NULL);
+    xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE * 2, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
+    xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE * 2, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
+    xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE * 2, &dynamicFibonnaciTaskPeriod, 2, NULL);
 
-    //pc.printf("bbbb %d\n", tee-1);
-    //pc.printf("AAA %d Hz, %d\n", SystemCoreClock, LPC_SC->CCLKCFG);
-    //Default divider is 3, and clock source is the 4Mhz IRC clock, m 36, n 1
-    /* Start the two tasks as described in the comments at the top of this
-    file. */
-    //    xTaskCreate( vTask1,           /* The function that implements the task. */
-    //                 "Task1",                           /* The text name assigned to the task - for debug only as it is not used by the kernel. */
-    //                 mainDEFAULT_STACK_SIZE,       /* The size of the stack to allocate to the task. */
-    //                 NULL,                           /* The parameter passed to the task - not used in this simple case. */
-    //                 mainTASK1_PRIORITY,/* The priority assigned to the task. */
-    //                 NULL );                         /* The task handle is not required, so NULL is passed. */
-
-    xTaskCreate(vTask2, "Task2", mainDEFAULT_STACK_SIZE, &deadlineTask2, 3, NULL);
-    //xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 2, NULL);
-    //xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 2, NULL);
-
+    int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+    int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+    int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 8};
+    
+    // #define POWERSAVINGMODE  3
+    //wait(5);
+    vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+wait(3);
+            vTaskStartScheduler();
     /* Start the tasks and timer running. */
-    vTaskStartScheduler();
+    // vTaskStartScheduler();
 
     /* If all is well, the scheduler will now be running, and the following
     line will never be reached.  If the following line does execute, then
@@ -172,8 +155,166 @@ int main()
     for (;;)
         ;
 }
+#define EXECUTIONCOUNT 4
+void vTaskFibonnaciFixedTime210ms(void *pvParameters)
+{
+    int *intPvParameters = (int *)pvParameters;
+    int delayinMs = intPvParameters[0];
+    const TickType_t xDelay = 100;
+    TickType_t xLastWakeTime;
+    int cycles = 1012000; //Takes around 210ms at 96Mhz
+    int executionCount = 0;
+    xLastWakeTime = xTaskGetTickCount();
+    int level = 0;
+    long n; //Needed otherwise the compiler skips the fibonacci calculation
+    for (;;)
+    {
+            //// Mudar o codigo do task ready pra poder ter um delay no inicio
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
+        // taskEXIT_CRITICAL();
+#endif
+    n = fibonnacciCalculation(cycles);
 
-volatile unsigned long x = 0, y = 0;
+        if (!ConsumptionTest)
+        {
+            if (executionCount < EXECUTIONCOUNT)
+            {
+                if (myled1 == 0)
+                    myled1 = 1;
+                else
+                    myled1 = 0;
+                executionCount++;
+            }
+            //Está a travar na segunda passada
+        }
+        
+        //pc.printf("[Fixed210] Delay : %x \n", n);
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
+        // taskEXIT_CRITICAL();
+#endif
+        if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+        {
+            myled1 = 1;
+            myled2 = 0;
+            myled3 = 0;
+            myled4 = 1;
+            // Serial pc2(USBTX, USBRX);
+            // pc2.printf("[Fixed210] Deadline missed : %d, Tick Count %d \n", xLastWakeTime + xDelay, xTaskGetTickCount());
+            vTaskSuspendAll();
+        }
+vTaskDelayUntil(&xLastWakeTime, xDelay);
+        
+    }
+}
+
+void vTaskFibonnaciFixedTime420ms(void *pvParameters)
+{
+    int *intPvParameters = (int *)pvParameters;
+    int delayinMs = intPvParameters[0];
+    const TickType_t xDelay = delayinMs;
+    TickType_t xLastWakeTime;
+    int executionCount = 0;
+    int cycles = 1012000 * 2; //Takes around 210ms at 96Mhz
+    xLastWakeTime = xTaskGetTickCount();
+    long n; //Needed otherwise the compiler skips the fibonacci calculation
+    for (;;)
+    {
+
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskReady(2, xTaskGetTickCount(), xLastWakeTime + xDelay);
+        // taskEXIT_CRITICAL();
+#endif
+        n = fibonnacciCalculation(cycles);
+        if (!ConsumptionTest)
+        {
+            if (executionCount < EXECUTIONCOUNT)
+            {
+                if (myled2 == 0)
+                    myled2 = 1;
+                else
+                    myled2 = 0;
+                executionCount++;
+            }
+        }
+        
+        //pc.printf("[Fixed420] Delay : %d\n", xDelay);
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskComplete(2, xTaskGetTickCount());
+        // taskEXIT_CRITICAL();
+#endif
+        if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+        {
+            myled1 = 0;
+            myled2 = 1;
+            myled3 = 0;
+            myled4 = 1;
+            // Serial pc2(USBTX, USBRX);
+            // pc2.printf("[Fixed420] Deadline missed : %d, Tick Count %d \n", xLastWakeTime + xDelay, xTaskGetTickCount());
+            vTaskSuspendAll();
+        }
+    vTaskDelayUntil(&xLastWakeTime, xDelay);    
+    }
+}
+void vTaskFibonnaciDynamicTime(void *pvParameters)
+{
+    int *intPvParameters = (int *)pvParameters;
+    int delayinMs = intPvParameters[0];
+    const TickType_t xDelay = delayinMs;
+    TickType_t xLastWakeTime;
+    int executionCount = 0;
+    int cycles = 1012000 * (rand() % 1 + 1); //Takes between 210ms and 840 ms at 96Mhz
+    xLastWakeTime = xTaskGetTickCount();
+    long n; //Needed otherwise the compiler skips the fibonacci calculation
+    for (;;)
+    {
+
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskReady(3, xTaskGetTickCount(), xLastWakeTime + xDelay);
+        // taskEXIT_CRITICAL();
+#endif
+        cycles = 1012000 * (rand() % 1 + 1);
+        n = fibonnacciCalculation(cycles);
+        if (!ConsumptionTest)
+        {
+
+            if (executionCount < EXECUTIONCOUNT)
+            {
+                if (myled3 == 0)
+                    myled3 = 1;
+                else
+                    myled3 = 0;
+            }
+            executionCount++;
+        }
+        //if(executionCount==5) cycles = 1012000 * 4;
+        //n = fibonnacciCalculation(cycles);
+        //if(executionCount==2) LPC_GPIO1->FIOPIN = (1 << 23);
+        //pc.printf("[Fixed210] Delay : %d\n", xDelay);;
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskComplete(3, xTaskGetTickCount());
+        // taskEXIT_CRITICAL();
+#endif
+        if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+        {
+            myled1 = 0;
+            myled2 = 0;
+            myled3 = 1;
+            myled4 = 1;
+
+            vTaskSuspendAll();
+        }
+       vTaskDelayUntil(&xLastWakeTime, xDelay);
+    }
+}
+
 void vTask1(void *pvParameters)
 {
     const TickType_t xDelay = mainTASK1_PERIOD / portTICK_PERIOD_MS;
@@ -218,62 +359,6 @@ void vTask1(void *pvParameters)
 
         vTaskDelayUntil(&xLastWakeTime, xDelay);
         //LPC_GPIO1->FIOPIN ^= (1<<ld2);
-    }
-}
-
-void vTaskFibonnaciFixedTime210ms(void *pvParameters)
-{
-    int *intPvParameters = (int *)pvParameters;
-    int delayinMs = intPvParameters[0];
-    const TickType_t xDelay = delayinMs / portTICK_PERIOD_MS;
-    TickType_t xLastWakeTime;
-    int cycles = 1012000; //Takes around 210ms at 96Mhz
-    xLastWakeTime = xTaskGetTickCount();
-    long n; //Needed otherwise the compiler skips the fibonacci calculation
-    for (;;)
-    {
-vTaskDelayUntil(&xLastWakeTime, xDelay);
-#if POWERSAVINGMODE == 3
-        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
-#endif
-        if (myled2 == 0)
-            myled2 = 1;
-        else
-            myled2 = 0;
-        n = fibonnacciCalculation(cycles);
-        pc.printf("Delay : %d\n", xDelay);
-#if POWERSAVINGMODE == 3
-        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
-#endif
-        vTaskDelayUntil(&xLastWakeTime, xDelay);
-    }
-}
-
-void vTaskFibonnaciFixedTime420ms(void *pvParameters)
-{
-    int *intPvParameters = (int *)pvParameters;
-    int delayinMs = intPvParameters[0];
-    const TickType_t xDelay = delayinMs / portTICK_PERIOD_MS;
-    TickType_t xLastWakeTime;
-    int cycles = 1012000; //Takes around 210ms at 96Mhz
-    xLastWakeTime = xTaskGetTickCount();
-    long n; //Needed otherwise the compiler skips the fibonacci calculation
-    for (;;)
-    {
- vTaskDelayUntil(&xLastWakeTime, xDelay);
-#if POWERSAVINGMODE == 3
-        cycleConservingDVSTaskReady(1, xTaskGetTickCount(), xLastWakeTime + xDelay);
-#endif
-        if (myled3 == 0)
-            myled3 = 1;
-        else
-            myled3 = 0;
-        n = fibonnacciCalculation(cycles);
-        pc.printf("Delay : %d\n", delayinMs);
-#if POWERSAVINGMODE == 3
-        cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
-#endif
-       
     }
 }
 
@@ -379,7 +464,7 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    //Sleep();
+    Sleep();
     //DeepSleep();
     //PowerDown();
     //DeepPowerDown();
@@ -391,6 +476,7 @@ extern "C"
     void
     vApplicationMallocFailedHook(void)
 {
+    myled4 = 1;
     while (1)
     {
         pc.printf("Malloc error !! Hello, world!\n");
@@ -404,6 +490,7 @@ extern "C"
     vApplicationStackOverflowHook(TaskHandle_t xTask,
                                   char *pcTaskName)
 {
+    myled4 = 1;
     while (1)
     {
         pc.printf("Stack Overflow error !! Hello, world!\n");

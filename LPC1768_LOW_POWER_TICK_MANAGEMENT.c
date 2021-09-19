@@ -47,8 +47,10 @@ static int *taskDeadlines;
 static int mode;
 static int currentFrequencyLevel;
 
+// CCRTDVS Variables
 static int *d_i;
 static int *c_lefti;
+static int frequencyChosenSVS = 0;
 
 // Default values for frequency levels
 const int default_frequencyStages[] = {24, 21, 18, 15, 12, 9, 6, 3};
@@ -97,7 +99,7 @@ static TickType_t xMaximumPossibleSuppressedTicks = 0;
 #define LED2 20 //
 #define LED3 21 //
 #define LED4 23 //
-
+#define frequencyLevelSelect(x) frequencyLevelSelector(x)
 /* Write to GPIO 2 on Port 18,20,21,23
  Initialized on main  otherwise initialize here
  Can't use mbed.h cause its not a .cpp file, and a .cpp file complains about the normal port tick 
@@ -123,14 +125,20 @@ LED4 = P1_23,
 
 int frequencyLevelSelector(int level)
 {
+	if(level == currentFrequencyLevel) return currentFrequencyLevel;
 	if (level < 0 || level > availableFrequencyLevels)
 	{
-		return;
+		return currentFrequencyLevel;
 	}
 
+	
+	taskENTER_CRITICAL();
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
+	updatePrescalerTIMER1();
 	frequencyChanged = true;
+	taskEXIT_CRITICAL();
+	// portENABLE_INTERRUPTS();
 	return level;
 }
 
@@ -168,12 +176,10 @@ void dynamicFrequencySysTickHandler(void)
 
 	if (frequencyChanged)
 	{
-		periodicTickIncrementCount = 0;
-		updatePrescalerTIMER1();
+		
 		frequencyChanged = false;
 	}
 
-	periodicTickIncrementCount++;
 
 	portENABLE_INTERRUPTS();
 
@@ -187,7 +193,7 @@ void vPortSetupTimerInterrupt(void)
 	LPC_SC->PCONP |= (1 << SBIT_TIMER1); /* Power ON Timer1 */
 
 	LPC_TIM1->MCR = (1 << SBIT_MR0I) | (1 << SBIT_MR0R); /* Clear TC on MR0 match and Generate Interrupt*/
-	LPC_TIM1->PR = getPrescalarFor100Us(PCLK_TIMER1);	 /* Prescalar for 1us */
+	LPC_TIM1->PR = getPrescalarFor100Us(PCLK_TIMER1);	 /* Prescalar for 100us */
 	LPC_TIM1->MR0 = (1000 / configTICK_RATE_HZ) * 10;	 /* Load timer value to generate Tick Rate delay*/
 	LPC_TIM1->TCR = (1 << SBIT_CNTEN);					 /* Start timer by setting the Counter Enable*/
 	NVIC_EnableIRQ(TIMER1_IRQn);
@@ -449,9 +455,6 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 
 #endif
 
-// Changed the amount of frequency levels and the frequency levels array into local variables
-// Need to implement the select frequency here as well
-
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -465,10 +468,6 @@ extern "C"
 	taskWorstCaseComputeTime = main_taskWorstCaseComputeTime;
 	taskDeadlines = main_taskDeadlines;
 	mode = main_mode;
-	/*	Modes
-	**	00 - SVS, 01 - CYCLE CONSERVING 
-	*/
-
 	availableFrequencyLevels = main_availableFrequencyLevels;
 	frequencyStages = main_frequencyStages;
 }
@@ -519,7 +518,7 @@ extern "C"
 	if (!validAlpha && i == 0)
 		return -1;
 	selectedFrequencyLevel = i - 1;
-	currentFrequencyLevel = selectedFrequencyLevel;
+	
 	return frequencyLevelSelect(selectedFrequencyLevel);
 	// return currentFrequencyLevel;
 	// }
@@ -538,7 +537,6 @@ extern "C"
 	// 	currentFrequencyLevel = selectedFrequencyLevel;
 	// 	return frequencyLevelSelector(selectedFrequencyLevel);
 	// }
-	return 0;
 }
 
 bool staticVoltageScalingRM_Test(float alpha)
@@ -580,13 +578,13 @@ bool staticVoltageScalingRM_Test(float alpha)
 ** To note: This function is not optimized for a huge amount of tasks, but having alarge amount of tasks 
 ** would break all the algorithms, therefore optimization here is not that important
 */
-static int findNextDeadline(int *deadlinesArray)
+static int findNextDeadline(int *deadlinesArray, int currentTick)
 {
-	int nextDeadline = deadlinesArray[0]; // The element in the arrayis a pointer to the deadline of the First task
+	int nextDeadline = INT32_MAX; // The element in the array is a pointer to the deadline of the First task
 	int i = 0;
-	for (i = 1; i < numberOfTasks; i++)
+	for (i = 0; i < numberOfTasks; i++)
 	{
-		if (nextDeadline > deadlinesArray[i])
+		if (nextDeadline > deadlinesArray[i] && deadlinesArray[i] > currentTick)
 			nextDeadline = deadlinesArray[i];
 	}
 	return nextDeadline;
@@ -598,7 +596,7 @@ static int findNextDeadline(int *deadlinesArray)
 // Changed the numberOfTasks to a local variable
 int setupCycleConservingDVS()
 {
-	int frequencyChosenSVS = 0;
+	
 	mode = 0;
 	frequencyChosenSVS = staticVoltageScalingFrequencyLevelSelector();
 	if (frequencyChosenSVS == -1)
@@ -607,10 +605,10 @@ int setupCycleConservingDVS()
 
 	d_i = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
 	c_lefti = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
-	;
+	
 
 	if (frequencyChosenSVS < 0)
-		return;
+		return-1;
 	for (i = 0; i < numberOfTasks; i++)
 	{
 		c_lefti[i] = taskWorstCaseComputeTime[i];
@@ -624,7 +622,7 @@ int setupCycleConservingDVS()
 int cycleConservingDVSFrequencySelector(int currentTick)
 {
 	// No need to convert into cycles, as the worst case computation time is in Ticks
-	int maxTicksUntilNextDeadline = findNextDeadline(taskDeadlines) - currentTick;
+	int maxTicksUntilNextDeadline = findNextDeadline(taskDeadlines, currentTick) - currentTick;
 
 	int totalD = 0;
 
@@ -643,16 +641,22 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	** Here it is not necessary as we have only 10 
 	*/
 	if (minimumFrequency > frequencyStages[1])
-		return 0; //If bigger than the 2 available frequency, we can only use the base
-
-	for (i = 1; i < availableFrequencyLevels; i++)
 	{
-		if (minimumFrequency > frequencyStages[i])
-			break;
-		desiredFrequencyLevel++;
+		desiredFrequencyLevel = 0; //If bigger than the 2 available frequency, we can only use the base
+	
 	}
-	//frequencyLevelSelector(desiredFrequencyLevel);
-	currentFrequencyLevel = desiredFrequencyLevel;
+	else
+	{
+		for (i = 1; i < availableFrequencyLevels; i++)
+		{
+			if (minimumFrequency > frequencyStages[i])
+				break;
+			desiredFrequencyLevel++;
+		}
+	}
+	// Esta a causar erros aqui for some reason (devia ser assim o codigo antigo quando calculava
+	// para ir pra o nivel maximo nao ia, fazendo com que deadlines fossem missed)
+	frequencyLevelSelector(desiredFrequencyLevel);
 	return desiredFrequencyLevel;
 }
 
@@ -678,9 +682,9 @@ int cycleConservingDVSTaskReady(int taskNumber, int currentTick, int taskNextExe
 {
 	taskDeadlines[taskNumber] = taskNextExecution;
 	c_lefti[taskNumber] = taskWorstCaseComputeTime[taskNumber];
-	int s_m = findNextDeadline(taskDeadlines) - currentTick;
+	int s_m = findNextDeadline(taskDeadlines, currentTick) - currentTick;
 
-	float ceilAux = (s_m * (frequencyStages[currentFrequencyLevel] * 1.0) / (frequencyStages[0] * 1.0));
+	float ceilAux = (s_m * (frequencyStages[frequencyChosenSVS] * 1.0) / (frequencyStages[0] * 1.0));
 	if (ceilAux != (int)ceilAux)
 		ceilAux = (int)ceilAux + 1; //If true, there is floating point, hence we remove and add one to ceil the value
 
@@ -696,26 +700,27 @@ int cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
 {
 	c_lefti[taskNumber] = 0;
 	d_i[taskNumber] = 0;
+
 	return cycleConservingDVSFrequencySelector(currentTick);
 }
 
-bool sufficientSchedulabilityTest()
+bool sufficientSchedulabilityTest(int main_numberOfTasks, int *taskWorstCaseComputeTime, int *taskDeadlines)
 {
-	float utilisation = 0, utilisationBound = 0;
+	float utilization = 0, utilizationBound = 0;
 	int i = 0;
 
-	utilisationBound = numberOfTasks * (pow(2, (1.0 / numberOfTasks)) - 1);
+	utilizationBound = numberOfTasks * (pow(2, (1.0 / numberOfTasks)) - 1);
 
 	for (i = 0; i < numberOfTasks; i++)
 	{
-		utilisation += taskWorstCaseComputeTime[i] / taskDeadlines[i];
+		utilization += taskWorstCaseComputeTime[i] / taskDeadlines[i];
 	}
 
-	if (utilisation > 1.0 || utilisation > utilisationBound)
+	if (utilization > 1.0 || utilization > utilizationBound)
 		return false;
 	return true;
 }
-
+/*
 int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
 {
 
@@ -734,8 +739,8 @@ int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime,
 #define config_SLEEP_ON_IDLE 0
 		break;
 
-		if (!sufficientSchedulabilityTest())
-			return -1;
+		//if (!sufficientSchedulabilityTest())
+		return -1;
 	//SVS no tickless
 	case 2:
 #define configUSE_TICKLESS_IDLE 0
@@ -764,28 +769,38 @@ int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime,
 	return 0;
 	//implement feasibility test
 }
-
+*/
 void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
 {
+	int selectedLevel = 0;
+	if (!sufficientSchedulabilityTest(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines))
+	{
 
-	switch (mode)
+		LPC_GPIO1->FIOPIN = (1 << 18);
+		LPC_GPIO1->FIOPIN = (1 << 20);
+		LPC_GPIO1->FIOPIN = (1 << 21);
+		LPC_GPIO1->FIOPIN = (1 << 23);
+
+		return;
+	}
+
+	switch (main_mode)
 	{
 	//Sleep on idle
 	case 0:
 		break;
-	//
+	//SVS
 	case 1:
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-		if (!staticVoltageScalingFrequencyLevelSelector())
-			return -3;
+		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
+		//if(selectedLevel>2) LPC_GPIO1->FIOPIN = (1 << 23);
 		break;
 	//Cycle Conserving no Tickless
 	case 2:
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-		if (!setupCycleConservingDVS())
-			return -2;
+		setupCycleConservingDVS();
 		break;
 	}
-
-	vTaskStartScheduler();
+	//wait(5);
+	
 }

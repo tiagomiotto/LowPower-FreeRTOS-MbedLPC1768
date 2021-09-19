@@ -2,23 +2,23 @@
     {
         "module": "BUILD\\LPC1768", 
         "size": {
-            ".data-delta": -8, 
-            ".text-delta": -352, 
-            ".bss": 17049, 
-            ".data": 20, 
+            ".data-delta": 0, 
+            ".text-delta": 20, 
+            ".bss": 17024, 
+            ".data": 28, 
             ".bss-delta": 0, 
-            ".text": 7063
+            ".text": 6465
         }
     }, 
     {
         "module": "[fill]", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": 0, 
-            ".bss": 23, 
-            ".data": 12, 
+            ".text-delta": -12, 
+            ".bss": 28, 
+            ".data": 15, 
             ".bss-delta": 0, 
-            ".text": 640
+            ".text": 632
         }
     }, 
     {
@@ -29,7 +29,7 @@
             ".bss": 89, 
             ".data": 2472, 
             ".bss-delta": 0, 
-            ".text": 27815
+            ".text": 27879
         }
     }, 
     {
@@ -40,7 +40,18 @@
             ".bss": 0, 
             ".data": 0, 
             ".bss-delta": 0, 
-            ".text": 3916
+            ".text": 4916
+        }
+    }, 
+    {
+        "module": "[lib]\\m.a", 
+        "size": {
+            ".data-delta": 0, 
+            ".text-delta": 0, 
+            ".bss": 0, 
+            ".data": 1, 
+            ".bss-delta": 0, 
+            ".text": 4528
         }
     }, 
     {
@@ -70,18 +81,18 @@
         "size": {
             ".data-delta": 0, 
             ".text-delta": 0, 
-            ".bss": 357, 
-            ".data": 264, 
+            ".bss": 361, 
+            ".data": 292, 
             ".bss-delta": 0, 
-            ".text": 7430
+            ".text": 8224
         }
     }, 
     {
         "summary": {
-            "static_ram": 20572, 
-            "total_flash_delta": -360, 
-            "static_ram_delta": -8, 
-            "total_flash": 55959
+            "static_ram": 20596, 
+            "total_flash_delta": 8, 
+            "static_ram_delta": 0, 
+            "total_flash": 61779
         }
     }
 ]
