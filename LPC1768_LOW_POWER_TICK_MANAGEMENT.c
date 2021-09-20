@@ -125,13 +125,13 @@ LED4 = P1_23,
 
 int frequencyLevelSelector(int level)
 {
-	if(level == currentFrequencyLevel) return currentFrequencyLevel;
+	if (level == currentFrequencyLevel)
+		return currentFrequencyLevel;
 	if (level < 0 || level > availableFrequencyLevels)
 	{
 		return currentFrequencyLevel;
 	}
 
-	
 	taskENTER_CRITICAL();
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
@@ -176,10 +176,9 @@ void dynamicFrequencySysTickHandler(void)
 
 	if (frequencyChanged)
 	{
-		
+
 		frequencyChanged = false;
 	}
-
 
 	portENABLE_INTERRUPTS();
 
@@ -518,7 +517,7 @@ extern "C"
 	if (!validAlpha && i == 0)
 		return -1;
 	selectedFrequencyLevel = i - 1;
-	
+
 	return frequencyLevelSelect(selectedFrequencyLevel);
 	// return currentFrequencyLevel;
 	// }
@@ -596,7 +595,7 @@ static int findNextDeadline(int *deadlinesArray, int currentTick)
 // Changed the numberOfTasks to a local variable
 int setupCycleConservingDVS()
 {
-	
+
 	mode = 0;
 	frequencyChosenSVS = staticVoltageScalingFrequencyLevelSelector();
 	if (frequencyChosenSVS == -1)
@@ -605,10 +604,9 @@ int setupCycleConservingDVS()
 
 	d_i = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
 	c_lefti = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
-	
 
 	if (frequencyChosenSVS < 0)
-		return-1;
+		return -1;
 	for (i = 0; i < numberOfTasks; i++)
 	{
 		c_lefti[i] = taskWorstCaseComputeTime[i];
@@ -643,7 +641,6 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	if (minimumFrequency > frequencyStages[1])
 	{
 		desiredFrequencyLevel = 0; //If bigger than the 2 available frequency, we can only use the base
-	
 	}
 	else
 	{
@@ -800,7 +797,13 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
 		setupCycleConservingDVS();
 		break;
+
+	case 3:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+
+		frequencyLevelSelect(3);
+		
+		break;
 	}
 	//wait(5);
-	
 }

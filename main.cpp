@@ -47,9 +47,9 @@ volatile long dealine3 = 0;
 
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
 //Add the conversion to ticks ( it is currently in ticks but we want in ms)
-int fixedFibonnaciTaskPeriod210ms = 100;
-int fixedFibonnaciTaskPeriod420ms = 200;
-int dynamicFibonnaciTaskPeriod = 300;
+int fixedFibonnaciTaskPeriod210ms = 400;
+int fixedFibonnaciTaskPeriod420ms = 500;
+int dynamicFibonnaciTaskPeriod = 700;
 bool ConsumptionTest = false;
 bool deadlinesMissed = false;
 
@@ -72,7 +72,10 @@ DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTE
 int main()
 {
 #define DVFSMODE 2
-
+    int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+    int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+    int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
+    
 #if magicINTERFACEDISABLE == 1
     int usbCONNECTED = vUSBIN;
     if (usbCONNECTED == 0)
@@ -92,15 +95,12 @@ int main()
             xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
             xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
             xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
-            int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-            int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
-            int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 8};
-            //ConsumptionTest = true;
+            ConsumptionTest = true;
             // #define POWERSAVINGMODE  3
 
             //wait(5);
             vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
-            wait(3);
+            //wait(3);
             vTaskStartScheduler();
             /* Start the tasks and timer running. */
             // vTaskStartScheduler();
@@ -128,16 +128,32 @@ int main()
     struct RTC_DATA now = defaultTime();
     initRTC(now);
 
+    // int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+    // int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+    // int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
+    
+    // #define POWERSAVINGMODE  3
+    //wait(5);
+ 
+    PWM1.period_ms(10.0f);
+    //PWM1.period_us(16000000/0.000001);
+    PWM1.write(0.5f);
+    //myled4=1;
+
+    // wait(5);
+    // vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, 3);
+    // if(SystemCoreClock==48000000) myled4=0;
+    // while(1);
     KIN1_InitCycleCounter(); /* enable DWT hardware */
     PHY_PowerDown();
  //xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 4, NULL);
-    xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE * 2, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
-    xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE * 2, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
-    xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE * 2, &dynamicFibonnaciTaskPeriod, 2, NULL);
+    xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE * 4, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
+    xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE * 4, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
+    xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE * 4, &dynamicFibonnaciTaskPeriod, 2, NULL);
 
-    int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-    int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
-    int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 8};
+    // int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+    // int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+    // int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 8};
     
     // #define POWERSAVINGMODE  3
     //wait(5);
@@ -155,12 +171,12 @@ wait(3);
     for (;;)
         ;
 }
-#define EXECUTIONCOUNT 4
+#define EXECUTIONCOUNT 15
 void vTaskFibonnaciFixedTime210ms(void *pvParameters)
 {
     int *intPvParameters = (int *)pvParameters;
     int delayinMs = intPvParameters[0];
-    const TickType_t xDelay = 100;
+    const TickType_t xDelay = delayinMs;
     TickType_t xLastWakeTime;
     int cycles = 1012000; //Takes around 210ms at 96Mhz
     int executionCount = 0;
@@ -188,9 +204,11 @@ void vTaskFibonnaciFixedTime210ms(void *pvParameters)
                 executionCount++;
             }
             //Está a travar na segunda passada
+            //Serial pc2(USBTX, USBRX);
+            //printf("%d \n", SystemCoreClock);
         }
         
-        //pc.printf("[Fixed210] Delay : %x \n", n);
+        
 #if DVFSMODE == 2
         // taskENTER_CRITICAL();
         cycleConservingDVSTaskComplete(1, xTaskGetTickCount());
