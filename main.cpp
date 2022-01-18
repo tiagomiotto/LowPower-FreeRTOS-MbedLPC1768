@@ -47,7 +47,7 @@ struct taskParameters
 {
     int xDelay;
     int xFibonnaciCycles;
-    int xPowerConsumptionTestIsWorstCase[7];
+    int* xPowerConsumptionTestIsWorstCase;
 };
 
 /* Test application timers */
@@ -160,9 +160,10 @@ int main()
     // xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE * 4, &dynamicFibonnaciTaskPeriod, 2, NULL);
     
     struct taskProperties dummyProperties;
+    int task1WorstCase = {1,0,0,1,1,0,1};
     dummyProperties.xDelay = 1000;
     dummyProperties.xFibonnaciCycles = 2;
-    dummyProperties.xPowerConsumptionTestIsWorstCase = {1,0,0,1,1,0,1};
+    dummyProperties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
     xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &dummyProperties, 2, NULL);
     // int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
     // int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
