@@ -43,10 +43,12 @@ volatile long deadline2 = 0;
 volatile long dealine3 = 0;
 
 
-struct taskParameters
+struct taskProperties
 {
+    int taskNumber;
     int xDelay;
     int xFibonnaciCycles;
+    int xFibonnaciCyclesWorstCase;
     int* xPowerConsumptionTestIsWorstCase;
 };
 
@@ -160,9 +162,11 @@ int main()
     // xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE * 4, &dynamicFibonnaciTaskPeriod, 2, NULL);
     
     struct taskProperties dummyProperties;
-    int task1WorstCase = {1,0,0,1,1,0,1};
+    int task1WorstCase[8] = {0,1,0,0,1,1,0,1};
+    dummyProperties.taskNumber = 1;
     dummyProperties.xDelay = 1000;
     dummyProperties.xFibonnaciCycles = 2;
+    dummyProperties.xFibonnaciCyclesWorstCase = 4;
     dummyProperties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
     xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &dummyProperties, 2, NULL);
     // int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
@@ -491,23 +495,47 @@ void vTask2(void *pvParameters)
 
 void vDummyTask(void *pvParameters)
 {
-    struct taskParameters *parameters = (struct taskParamters*) pvParameters;
+    /* Unpack parameters into local variables for ease of interpretation */
+    struct taskProperties *parameters = (struct taskProperties*) pvParameters;
     const TickType_t xDelay = parameters->xDelay;
-    TickType_t xLastWakeTime;
-    //int* taskDeadline = (int*) pvParameters[0];
-    xLastWakeTime = xTaskGetTickCount();
-    srand(time(NULL));
-    long n;
-    int cycles = parameters->xFibonnaciCycles; // Takes around 210ms at 96Mhz
+    int baseCycles = parameters->xFibonnaciCycles; // Takes around 210ms at 96Mhz
+    int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
     int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
+    int taskNumber = parameters->taskNumber;
+    
+    /* Define local variables for counting runs and delays */
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    long fibonnacciAuxiliar = 0;
+    int runNumber =0;
+
 
     for (;;)
     {
-        myled1 = !(myled1);
-        pc.printf("Got xDelay = %d, cycles = %d, and the values for is worst case %d,%d,%d,%d,%d,%d,%d \n",
-                  xDelay, cycles, isWorstCase[0],isWorstCase[1],isWorstCase[2],isWorstCase[3],isWorstCase[4],isWorstCase[5],isWorstCase[6]);
-        vTaskDelayUntil(&xLastWakeTime, 100);
-        // LPC_GPIO1->FIOPIN ^= (1<<ld2);
+        
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+        // taskEXIT_CRITICAL();
+#endif
+        n = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+        runNumber++;
+        if(runNumber>7) runNumber=0;
+#if DVFSMODE == 2
+        // taskENTER_CRITICAL();
+        cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+        // taskEXIT_CRITICAL();
+#endif
+        if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+        {
+            myled1 = 1;
+            myled2 = 0;
+            myled3 = 0;
+            myled4 = 1;
+            vTaskSuspendAll();
+        }
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
+    }
+        
     }
 }
 
