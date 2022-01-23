@@ -74,10 +74,6 @@ bool deadlinesMissed = false;
 #define magicINTERFACEDISABLE 1
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
-// /* bit position of CCR register */
-// #define SBIT_CLKEN 0  /* RTC Clock Enable*/
-// #define SBIT_CTCRST 1 /* RTC Clock Reset */
-// #define SBIT_CCALEN 4 /* RTC Calibration counter enable */
 
 int main()
 {
@@ -129,10 +125,7 @@ int main()
     }
 #endif
 
-    // time_t t;
-    // srand((unsigned)time(&t));
-    // struct RTC_DATA now = defaultTime();
-    // initRTC(now);
+
 
 
     KIN1_InitCycleCounter(); /* enable DWT hardware  IS THIS NECESSARY???*/
