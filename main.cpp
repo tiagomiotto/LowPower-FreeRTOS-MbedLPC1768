@@ -33,6 +33,8 @@ void vTask2(void *pvParameters);
 void vTaskFibonnaciFixedTime210ms(void *pvParameters);
 void vTaskFibonnaciFixedTime420ms(void *pvParameters);
 void vTaskFibonnaciDynamicTime(void *pvParameters);
+
+void vDummyTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
 
 volatile long contador = 0;
@@ -60,14 +62,6 @@ int dynamicFibonnaciTaskPeriod = 700;
 bool ConsumptionTest = false;
 bool deadlinesMissed = false;
 
-// /* DVFS Variables*/
-
-// volatile short frequencyDivider = 1;
-// extern int test;
-// extern TickType_t useridleTime;
-// volatile tm t3;
-// #define minDivider 1
-// PwmOut PWM1(p21);
 
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */
@@ -98,9 +92,9 @@ int main()
             KIN1_InitCycleCounter(); /* enable DWT hardware */
             PHY_PowerDown();
 
-            xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
-            xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
-            xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
+            // xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
+            // xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
+            // xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
             ConsumptionTest = true;
             // #define POWERSAVINGMODE  3
 
@@ -165,6 +159,7 @@ void vDummyTask(void *pvParameters)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     long fibonnacciAuxiliar = 0;
     int runNumber =0;
+    int n =0;
 
 
     for (;;)
@@ -194,7 +189,6 @@ void vDummyTask(void *pvParameters)
         vTaskDelayUntil(&xLastWakeTime, xDelay);
     }
         
-    }
 }
 
 #ifdef __cplusplus

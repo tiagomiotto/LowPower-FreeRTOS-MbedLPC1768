@@ -38,7 +38,7 @@
 /* User defined Variables */
 #include <stdbool.h>
 
-//Global variables stablished during the setup
+// Global variables stablished during the setup
 static int numberOfTasks = 0;
 static int *taskWorstCaseComputeTime;
 static int availableFrequencyLevels;
@@ -102,7 +102,7 @@ static TickType_t xMaximumPossibleSuppressedTicks = 0;
 #define frequencyLevelSelect(x) frequencyLevelSelector(x)
 /* Write to GPIO 2 on Port 18,20,21,23
  Initialized on main  otherwise initialize here
- Can't use mbed.h cause its not a .cpp file, and a .cpp file complains about the normal port tick 
+ Can't use mbed.h cause its not a .cpp file, and a .cpp file complains about the normal port tick
  interrupt
 LED1 = P1_18,
 LED2 = P1_20,
@@ -243,7 +243,7 @@ void updatePrescalerTIMER1(void)
 }
 void TIMER1_IRQHandler(void)
 {
-	LPC_TIM1->IR |= (1 << 0); //Clear MR0 Interrupt flag
+	LPC_TIM1->IR |= (1 << 0); // Clear MR0 Interrupt flag
 	dynamicFrequencySysTickHandler();
 }
 
@@ -273,8 +273,8 @@ unsigned int getPrescalarFor100Us(uint8_t timerPclkBit)
 	}
 
 	prescalarFor100Us = pclk / 10000 - 1; /* Prescalar for 1us (1000000Counts/sec) */
-	//prescalarForMs = pclk / 1000 - 1; /* Prescalar for 1us (1000000Counts/sec) */
-	//prescalarForUs = pclk / 1000000 - 1; /* Prescalar for 1us (1000000Counts/sec) */
+	// prescalarForMs = pclk / 1000 - 1; /* Prescalar for 1us (1000000Counts/sec) */
+	// prescalarForUs = pclk / 1000000 - 1; /* Prescalar for 1us (1000000Counts/sec) */
 
 	return prescalarFor100Us;
 }
@@ -338,7 +338,7 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 		ulReloadValue -= (uint32_t)getCounterTIMER1();
 		/* Set the new reload value. */
 
-		//portNVIC_SYSTICK_LOAD_REG = ulReloadValue;
+		// portNVIC_SYSTICK_LOAD_REG = ulReloadValue;
 		setReloadValueTIMER1(ulReloadValue);
 
 		/* Clear the SysTick count flag and set the count value back to
@@ -457,8 +457,6 @@ void vApplicationSleep(TickType_t xExpectedIdleTime)
 #ifdef __cplusplus
 extern "C"
 #endif
-
-	// DVFS Functions
 	void
 	setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
 {
@@ -497,7 +495,7 @@ extern "C"
 	int i = 0;
 	int selectedFrequencyLevel = 0;
 
-	//Catch error if setup not implemented
+	// Catch error if setup not implemented
 	if (numberOfTasks == 0)
 	{
 		return -2;
@@ -505,8 +503,6 @@ extern "C"
 
 	/* Even if it fails in the max frequency, will return 0 and operate at max frequency
 		If it is valid through all levels the second condition will act and stop the loop*/
-	// if (mode == 0) //RM
-	// {
 	while (validAlpha && i < availableFrequencyLevels)
 	{
 		alphaToTest = (frequencyStages[i] * 1.0f) / (frequencyStages[0] * 1.0f);
@@ -552,15 +548,15 @@ bool staticVoltageScalingRM_Test(float alpha)
 		{
 			ceilAux = (taskDeadlines[currentTaskInTest] / 1.0f) / (taskDeadlines[i] / 1.0f);
 			if (ceilAux != (int)ceilAux)
-				ceilAux = (int)ceilAux + 1;							 //If true, there is floating point, hence we remove and add one to ceil the value
-			computeTimeSum += ceilAux * taskWorstCaseComputeTime[i]; //ceil
+				ceilAux = (int)ceilAux + 1;							 // If true, there is floating point, hence we remove and add one to ceil the value
+			computeTimeSum += ceilAux * taskWorstCaseComputeTime[i]; // ceil
 		}
 
 		if (alpha * taskDeadlines[currentTaskInTest] >= computeTimeSum)
 		{
 
 			if (currentTaskInTest + 1 == numberOfTasks)
-				return true; //Alpha is valid and deadlines are not violated
+				return true; // Alpha is valid and deadlines are not violated
 
 			/* Reset the sum and test the next Task*/
 			computeTimeSum = 0;
@@ -574,7 +570,7 @@ bool staticVoltageScalingRM_Test(float alpha)
 /* Deadlines array has to be an array of pointers, to allow for the tasks to change the values inside the array
 ** during execution by changing the value of the pointer directly, intead of accessing the array
 **
-** To note: This function is not optimized for a huge amount of tasks, but having alarge amount of tasks 
+** To note: This function is not optimized for a huge amount of tasks, but having alarge amount of tasks
 ** would break all the algorithms, therefore optimization here is not that important
 */
 static int findNextDeadline(int *deadlinesArray, int currentTick)
@@ -615,8 +611,8 @@ int setupCycleConservingDVS()
 	return frequencyChosenSVS;
 }
 
-//Changed number of Tasks to local
-// Changed deadlines to local
+// Changed number of Tasks to local
+//  Changed deadlines to local
 int cycleConservingDVSFrequencySelector(int currentTick)
 {
 	// No need to convert into cycles, as the worst case computation time is in Ticks
@@ -636,11 +632,11 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	float minimumFrequency = ((totalD * 1.0) / maxTicksUntilNextDeadline) * frequencyStages[0];
 
 	/* Can be optimized if we have a lot of frequencies to choose from, by only searching the bottom or top frequencies
-	** Here it is not necessary as we have only 10 
+	** Here it is not necessary as we have only 10
 	*/
 	if (minimumFrequency > frequencyStages[1])
 	{
-		desiredFrequencyLevel = 0; //If bigger than the 2 available frequency, we can only use the base
+		desiredFrequencyLevel = 0; // If bigger than the 2 available frequency, we can only use the base
 	}
 	else
 	{
@@ -683,11 +679,11 @@ int cycleConservingDVSTaskReady(int taskNumber, int currentTick, int taskNextExe
 
 	float ceilAux = (s_m * (frequencyStages[frequencyChosenSVS] * 1.0) / (frequencyStages[0] * 1.0));
 	if (ceilAux != (int)ceilAux)
-		ceilAux = (int)ceilAux + 1; //If true, there is floating point, hence we remove and add one to ceil the value
+		ceilAux = (int)ceilAux + 1; // If true, there is floating point, hence we remove and add one to ceil the value
 
 	int s_j = ceilAux;
 
-	//int s_j = ceil(s_m * (frequencyStages[currentFrequencyLevel] * 1.0) / (frequencyStages[0] * 1.0));
+	// int s_j = ceil(s_m * (frequencyStages[currentFrequencyLevel] * 1.0) / (frequencyStages[0] * 1.0));
 	cycleConservingDVSAllocateCycles(s_j);
 
 	return cycleConservingDVSFrequencySelector(currentTick);
@@ -717,6 +713,48 @@ bool sufficientSchedulabilityTest(int main_numberOfTasks, int *taskWorstCaseComp
 		return false;
 	return true;
 }
+
+void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
+{
+	int selectedLevel = 0;
+	if (!sufficientSchedulabilityTest(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines))
+	{
+
+		LPC_GPIO1->FIOPIN = (1 << 18);
+		LPC_GPIO1->FIOPIN = (1 << 20);
+		LPC_GPIO1->FIOPIN = (1 << 21);
+		LPC_GPIO1->FIOPIN = (1 << 23);
+
+		return;
+	}
+
+	switch (main_mode)
+	{
+	// Sleep on idle
+	case 0:
+		break;
+	// SVS
+	case 1:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
+		// if(selectedLevel>2) LPC_GPIO1->FIOPIN = (1 << 23);
+		break;
+	// Cycle Conserving no Tickless
+	case 2:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		setupCycleConservingDVS();
+		break;
+
+	case 3:
+		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		//frequencyLevelSelect(3);
+
+		break;
+	}
+	
+}
+
+
 /*
 int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
 {
@@ -767,43 +805,3 @@ int setupPowerSaving(int main_numberOfTasks, int *main_taskWorstCaseComputeTime,
 	//implement feasibility test
 }
 */
-void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_availableFrequencyLevels, int *main_frequencyStages, int main_mode)
-{
-	int selectedLevel = 0;
-	if (!sufficientSchedulabilityTest(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines))
-	{
-
-		LPC_GPIO1->FIOPIN = (1 << 18);
-		LPC_GPIO1->FIOPIN = (1 << 20);
-		LPC_GPIO1->FIOPIN = (1 << 21);
-		LPC_GPIO1->FIOPIN = (1 << 23);
-
-		return;
-	}
-
-	switch (main_mode)
-	{
-	//Sleep on idle
-	case 0:
-		break;
-	//SVS
-	case 1:
-		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
-		//if(selectedLevel>2) LPC_GPIO1->FIOPIN = (1 << 23);
-		break;
-	//Cycle Conserving no Tickless
-	case 2:
-		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-		setupCycleConservingDVS();
-		break;
-
-	case 3:
-		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-
-		frequencyLevelSelect(3);
-		
-		break;
-	}
-	//wait(5);
-}
