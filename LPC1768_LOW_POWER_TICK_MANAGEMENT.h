@@ -15,6 +15,7 @@ const int periodicTickIncrement[] = {0, 11, 5, 3, 2, 0, 0, 0, 0, 0};
 // extern volatile int currentFrequencyLevel;
 extern volatile short periodicTickIncrementCount;
 extern volatile bool frequencyChanged;
+short dvfsMode;
 
 int frequencyLevelSelector(int level);
 

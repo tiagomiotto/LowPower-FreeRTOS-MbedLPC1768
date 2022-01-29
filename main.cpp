@@ -25,14 +25,13 @@ DigitalOut myled4(LED4);
 
 #define ld2 18 // P2_1
 
-
-
 /*-----------------------------------------------------------*/
-void vTask1(void *pvParameters);
-void vTask2(void *pvParameters);
-void vTaskFibonnaciFixedTime210ms(void *pvParameters);
-void vTaskFibonnaciFixedTime420ms(void *pvParameters);
-void vTaskFibonnaciDynamicTime(void *pvParameters);
+// void vTask1(void *pvParameters);
+// void vTask2(void *pvParameters);
+// void vTaskFibonnaciFixedTime210ms(void *pvParameters);
+// void vTaskFibonnaciFixedTime420ms(void *pvParameters);
+// void vTaskFibonnaciDynamicTime(void *pvParameters);
+printOutNumberAsLeds(int n);
 
 void vDummyTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
@@ -42,17 +41,14 @@ volatile long deadline1 = 0;
 volatile long deadline2 = 0;
 volatile long dealine3 = 0;
 
-
 struct taskProperties
 {
     int taskNumber;
     int xDelay;
     int xFibonnaciCycles;
     int xFibonnaciCyclesWorstCase;
-    int* xPowerConsumptionTestIsWorstCase;
+    int *xPowerConsumptionTestIsWorstCase;
 };
-
-
 
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
 // Add the conversion to ticks ( it is currently in ticks but we want in ms)
@@ -62,133 +58,191 @@ int dynamicFibonnaciTaskPeriod = 700;
 bool ConsumptionTest = false;
 bool deadlinesMissed = false;
 
-
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */
 #define magicINTERFACEDISABLE 1
+#define lowPowerMode 1
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
-
+/*
+ * When magicINTERFACEDISABLE is set to one, run the alternative main code that will
+ * disable the Magic Intraface from the Mbed LPC1768 before preparing the application
+ * and the FreeRTOS code to run
+ */
+#if magicINTERFACEDISABLE == 1
 int main()
 {
-#define DVFSMODE 2
-    int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-    int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
-    int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
 
-#if magicINTERFACEDISABLE == 1
+    /* Check if the USB cable is connected */
     int usbCONNECTED = vUSBIN;
     if (usbCONNECTED == 0)
     {
-        int result;
-        // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
-        // Check reset source register
-        result = LPC_SC->RSID;
+
+        /*
+         * On reset, determine through the reset source register if a watchdog,
+         * power on reset or a pushbutton caused reset
+         */
+        int result = LPC_SC->RSID;
         if ((result & 0x03) == 0)
         {
-            // was not POR or reset pushbutton so
-            // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
 
-            KIN1_InitCycleCounter(); /* enable DWT hardware */
+            /*
+             * The reset was not a Push button nor a Power on Reset, meaning the Magic Interface
+             * is disabled and the Mbed is out of DEBUG mode
+             */
+            KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
             PHY_PowerDown();
 
-            // xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
-            // xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
-            // xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
-            ConsumptionTest = true;
-            // #define POWERSAVINGMODE  3
+            /*
+             * Setup the task properties structure for each task
+             */
+            struct taskProperties task1Properties;
+            int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+            task1Properties.taskNumber = 1;
+            task1Properties.xDelay = 800;
+            task1Properties.xFibonnaciCycles = 2;
+            task1Properties.xFibonnaciCyclesWorstCase = 4;
+            task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, 2, NULL);
 
+            struct taskProperties task2Properties;
+            int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+            task2Properties.taskNumber = 2;
+            task2Properties.xDelay = 1000;
+            task2Properties.xFibonnaciCycles = 2;
+            task2Properties.xFibonnaciCyclesWorstCase = 4;
+            task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, 2, NULL);
 
+            struct taskProperties task3Properties;
+            int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+            task3Properties.taskNumber = 3;
+            task3Properties.xDelay = 1400;
+            task3Properties.xFibonnaciCycles = 2;
+            task3Properties.xFibonnaciCyclesWorstCase = 4;
+            task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, 2, NULL);
+
+#ifdef lowPowerMode
+            /* Start the scheduller in Low Power Mode */
             vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+#else
+            /* Start the normal scheduller. */
             vTaskStartScheduler();
-
-            for (;;)
-                ;
+#endif
         }
         else
         {
-            // Was an initial manual or Power on Reset
-            // Clear reset source register bits for next reset
-            // This codes only executes the first time after initial POR or button reset
-            // Now can do a reset to free mbed of debug mode
+            
+            /*
+             * The reset was a manual buttonReset or a Power on Reset, so we clear the reset register
+             * disable the Magic Interface and do a software Reset to bring the Mbed out of the DEBUG
+             * mode.
+             */
             LPC_SC->RSID = 0x0F;
-            result = mbed_interface_powerdown(); 
+            result = mbed_interface_powerdown();
             wait(1);
             NVIC_SystemReset();
         }
     }
+}
+#else
+int main()
+{
+            KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+            PHY_PowerDown();
+
+            /*
+             * Setup the task properties structure for each task
+             */
+            struct taskProperties task1Properties;
+            int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+            task1Properties.taskNumber = 1;
+            task1Properties.xDelay = 800;
+            task1Properties.xFibonnaciCycles = 2;
+            task1Properties.xFibonnaciCyclesWorstCase = 4;
+            task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, 2, NULL);
+
+            struct taskProperties task2Properties;
+            int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+            task2Properties.taskNumber = 2;
+            task2Properties.xDelay = 1000;
+            task2Properties.xFibonnaciCycles = 2;
+            task2Properties.xFibonnaciCyclesWorstCase = 4;
+            task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, 2, NULL);
+
+            struct taskProperties task3Properties;
+            int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+            task3Properties.taskNumber = 3;
+            task3Properties.xDelay = 1400;
+            task3Properties.xFibonnaciCycles = 2;
+            task3Properties.xFibonnaciCyclesWorstCase = 4;
+            task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, 2, NULL);
+
+#ifdef lowPowerMode
+            /* Start the scheduller in Low Power Mode */
+            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+#else
+            /* Start the normal scheduller. */
+            vTaskStartScheduler();
 #endif
-
-
-
-
-    KIN1_InitCycleCounter(); /* enable DWT hardware  IS THIS NECESSARY???*/
-    PHY_PowerDown();
-
-    struct taskProperties dummyProperties;
-    int task1WorstCase[8] = {0,1,0,0,1,1,0,1};
-    dummyProperties.taskNumber = 1;
-    dummyProperties.xDelay = 1000;
-    dummyProperties.xFibonnaciCycles = 2;
-    dummyProperties.xFibonnaciCyclesWorstCase = 4;
-    dummyProperties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
-    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &dummyProperties, 2, NULL);
-
-    // vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
-    // wait(3);
-    vTaskStartScheduler();
-    /* Start the tasks and timer running. */
-    // vTaskStartScheduler();
-
     for (;;)
         ;
 }
-
+#endif
 
 void vDummyTask(void *pvParameters)
 {
     /* Unpack parameters into local variables for ease of interpretation */
-    struct taskProperties *parameters = (struct taskProperties*) pvParameters;
+    struct taskProperties *parameters = (struct taskProperties *)pvParameters;
     const TickType_t xDelay = parameters->xDelay;
-    int baseCycles = parameters->xFibonnaciCycles; // Takes around 210ms at 96Mhz
+    int baseCycles = parameters->xFibonnaciCycles;               // Takes around 210ms at 96Mhz
     int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
     int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
     int taskNumber = parameters->taskNumber;
-    
+
     /* Define local variables for counting runs and delays */
     TickType_t xLastWakeTime = xTaskGetTickCount();
     long fibonnacciAuxiliar = 0;
-    int runNumber =0;
-    int n =0;
-
+    int runNumber = 0;
+    int n = 0;
 
     for (;;)
     {
-        
-#if DVFSMODE == 2
-        // taskENTER_CRITICAL();
-        cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
-        // taskEXIT_CRITICAL();
-#endif
+
+        // Cycle conserving task ready to run
+        if (dvfsMode == 2)
+            cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+
+        // Actual task code
         n = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
         runNumber++;
-        if(runNumber>7) runNumber=0;
-#if DVFSMODE == 2
-        // taskENTER_CRITICAL();
-        cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
-        // taskEXIT_CRITICAL();
-#endif
+        if (runNumber > 7)
+            runNumber = 0;
+
+        // Cycle conserving task ready finished running
+        if (dvfsMode == 2)
+            cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+
+        // If the deadline is missed suspend all and print out a code
         if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
         {
-            myled1 = 1;
-            myled2 = 0;
-            myled3 = 0;
-            myled4 = 1;
+            printOutNumberAsLeds(taskNumber);
             vTaskSuspendAll();
         }
         vTaskDelayUntil(&xLastWakeTime, xDelay);
     }
-        
+}
+
+void printOutNumberAsLeds(int n)
+{
+    myled1 = n & 1;
+    myled2 = n >> 1 & 1;
+    myled3 = n >> 2 & 1;
+    myled4 = n >> 3 & 1;
 }
 
 #ifdef __cplusplus
@@ -229,6 +283,140 @@ extern "C"
         pc.printf("Stack Overflow error !! Hello, world!\n");
     }
 }
+// int main()
+// {
+// #define DVFSMODE 2
+//     int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+//     int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+//     int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
+
+// #if magicINTERFACEDISABLE == 1
+//     int usbCONNECTED = vUSBIN;
+//     if (usbCONNECTED == 0)
+//     {
+//         int result;
+//         // On reset, determine if a watchdog, power on reset or a pushbutton caused reset and display on LED 4 or 3
+//         // Check reset source register
+//         result = LPC_SC->RSID;
+//         if ((result & 0x03) == 0)
+//         {
+//             // was not POR or reset pushbutton so
+//             // Mbed is out of debug mode and reset so can enter DeepSleep now and wakeup using watchdog
+
+//             KIN1_InitCycleCounter(); /* enable DWT hardware */
+//             PHY_PowerDown();
+
+//             // xTaskCreate(vTaskFibonnaciFixedTime210ms, "Fixed Fibonnaci Task 210 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod210ms, 4, NULL);
+//             // xTaskCreate(vTaskFibonnaciFixedTime420ms, "Fixed Fibonnaci Task 420 ms", configMINIMAL_STACK_SIZE, &fixedFibonnaciTaskPeriod420ms, 3, NULL);
+//             // xTaskCreate(vTaskFibonnaciDynamicTime, "Dynamic Fibonnaci Task 210-840 ms", configMINIMAL_STACK_SIZE, &dynamicFibonnaciTaskPeriod, 2, NULL);
+//             ConsumptionTest = true;
+//             // #define POWERSAVINGMODE  3
+
+//             vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+//             vTaskStartScheduler();
+
+//             for (;;)
+//                 ;
+//         }
+//         else
+//         {
+//             // Was an initial manual or Power on Reset
+//             // Clear reset source register bits for next reset
+//             // This codes only executes the first time after initial POR or button reset
+//             // Now can do a reset to free mbed of debug mode
+//             LPC_SC->RSID = 0x0F;
+//             result = mbed_interface_powerdown();
+//             wait(1);
+//             NVIC_SystemReset();
+//         }
+//     }
+// #endif
+
+//     KIN1_InitCycleCounter(); /* enable DWT hardware  IS THIS NECESSARY???*/
+//     PHY_PowerDown();
+
+//     struct taskProperties task1Properties;
+//     int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+//     task1Properties.taskNumber = 1;
+//     task1Properties.xDelay = 800;
+//     task1Properties.xFibonnaciCycles = 2;
+//     task1Properties.xFibonnaciCyclesWorstCase = 4;
+//     task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+//     xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, 2, NULL);
+
+//     struct taskProperties task2Properties;
+//     int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+//     task2Properties.taskNumber = 2;
+//     task2Properties.xDelay = 1000;
+//     task2Properties.xFibonnaciCycles = 2;
+//     task2Properties.xFibonnaciCyclesWorstCase = 4;
+//     task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+//     xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, 2, NULL);
+
+//     struct taskProperties task3Properties;
+//     int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+//     task3Properties.taskNumber = 3;
+//     task3Properties.xDelay = 1400;
+//     task3Properties.xFibonnaciCycles = 2;
+//     task3Properties.xFibonnaciCyclesWorstCase = 4;
+//     task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+//     xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, 2, NULL);
+
+//     // vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+//     // wait(3);
+//     vTaskStartScheduler();
+//     /* Start the tasks and timer running. */
+//     // vTaskStartScheduler();
+
+//     for (;;)
+//         ;
+// }
+
+// void vDummyTask(void *pvParameters)
+// {
+//     /* Unpack parameters into local variables for ease of interpretation */
+//     struct taskProperties *parameters = (struct taskProperties *)pvParameters;
+//     const TickType_t xDelay = parameters->xDelay;
+//     int baseCycles = parameters->xFibonnaciCycles;               // Takes around 210ms at 96Mhz
+//     int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
+//     int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
+//     int taskNumber = parameters->taskNumber;
+
+//     /* Define local variables for counting runs and delays */
+//     TickType_t xLastWakeTime = xTaskGetTickCount();
+//     long fibonnacciAuxiliar = 0;
+//     int runNumber = 0;
+//     int n = 0;
+
+//     for (;;)
+//     {
+
+//         // Cycle conserving task ready to run
+//         //  taskENTER_CRITICAL();
+//         if (dvfsMode == 2)
+//             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+//         // taskEXIT_CRITICAL();
+
+//         // Actual task code
+//         n = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+//         runNumber++;
+//         if (runNumber > 7)
+//             runNumber = 0;
+
+//         // taskENTER_CRITICAL();
+//         // Cycle conserving task ready finished running
+//         if (dvfsMode == 2)
+//             cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+//         // taskEXIT_CRITICAL();
+//         // If the deadline is missed suspend all and print out a code
+//         if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+//         {
+//             printOutNumberAsLeds(taskNumber);
+//             vTaskSuspendAll();
+//         }
+//         vTaskDelayUntil(&xLastWakeTime, xDelay);
+//     }
+// }
 
 // /* Defined in main.c. */
 // #ifdef __cplusplus
