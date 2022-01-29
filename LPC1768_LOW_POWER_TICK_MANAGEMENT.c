@@ -613,7 +613,7 @@ int setupCycleConservingDVS()
 
 // Changed number of Tasks to local
 //  Changed deadlines to local
-int cycleConservingDVSFrequencySelector(int currentTick)
+static int cycleConservingDVSFrequencySelector(int currentTick)
 {
 	// No need to convert into cycles, as the worst case computation time is in Ticks
 	int maxTicksUntilNextDeadline = findNextDeadline(taskDeadlines, currentTick) - currentTick;
@@ -653,7 +653,7 @@ int cycleConservingDVSFrequencySelector(int currentTick)
 	return desiredFrequencyLevel;
 }
 
-void cycleConservingDVSAllocateCycles(int k)
+static void cycleConservingDVSAllocateCycles(int k)
 {
 	int i = 0;
 	for (i = 0; i < numberOfTasks; i++)

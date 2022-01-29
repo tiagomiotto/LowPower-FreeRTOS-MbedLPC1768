@@ -37,6 +37,7 @@
  *
  * See http://www.freertos.org/a00110.html.
  *------------------------
+ */
 extern uint32_t SystemCoreClock;
 
 /* User included */
@@ -55,7 +56,7 @@ demo, or 0 to run the more comprehensive test and demo application. */
 // #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS() vConfigureTimerForRunTimeStats()
 // #define portGET_RUN_TIME_COUNTER_VALUE() LPC_TIM0->TC
 
-// /* TIMER REGISTERS */
+// TIMER REGISTERS 
 // #define T0TCR 0x40004004
 // #define WRITE_T0TCR(val) ((*(volatile uint32_t *)T0TCR) = (val))
 // #define READ_T0TCR() (*(volatile uint32_t *)T0TCR)
