@@ -12,6 +12,7 @@
         "initializer_list": "cpp",
         "digitalout.h": "c",
         "lpc1768_low_power_tick_management.h": "c",
-        "functional": "cpp"
+        "functional": "cpp",
+        "mbed.h": "c"
     }
 }

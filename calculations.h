@@ -6,11 +6,13 @@
 // #define LONG_MIN               -2147483647 // -(231-1)
 // #define LONG_MAX               +2147483647 // 231-1
 // #define ULONG_MAX               4294967295 // 232-1
-#include<climits>
+//#include<climits>
 
-long fibonnacciCalculation(long cycles);
 void primeCalculation(int cycles);
 void IOCalculation(int aux);
 long longCalculation(int cycles);
 long longLongCalculation(int cycles);
 #endif
+
+
+long fibonnacciCalculation(long cycles);

@@ -10,6 +10,8 @@
 #include "TARGET_LPC1768_N/LPC17xx.h"
 #include "lpc1768_rtc.h"
 
+#include "testApplication.h"
+
 #include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
 
 #include "TaskConfiguration.h"
@@ -35,19 +37,23 @@ void printOutNumberAsLeds(int n);
 void vDummyTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
 
-volatile long contador = 0;
-volatile long deadline1 = 0;
-volatile long deadline2 = 0;
-volatile long dealine3 = 0;
+// volatile long contador = 0;
+// volatile long deadline1 = 0;
+// volatile long deadline2 = 0;
+// volatile long dealine3 = 0;
 
-struct taskProperties
-{
-    int taskNumber;
-    int xDelay;
-    int xFibonnaciCycles;
-    int xFibonnaciCyclesWorstCase;
-    int *xPowerConsumptionTestIsWorstCase;
-};
+// extern struct taskProperties task1Properties;
+// extern struct taskProperties task2Properties;
+// extern struct taskProperties task3Properties;
+
+// struct taskProperties
+// {
+//     int taskNumber;
+//     int xDelay;
+//     int xFibonnaciCycles;
+//     int xFibonnaciCyclesWorstCase;
+//     int *xPowerConsumptionTestIsWorstCase;
+// };
 
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
 // Add the conversion to ticks ( it is currently in ticks but we want in ms)
@@ -95,32 +101,33 @@ int main()
             /*
              * Setup the task properties structure for each task
              */
-            struct taskProperties task1Properties;
-            int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
-            task1Properties.taskNumber = 1;
-            task1Properties.xDelay = 800;
-            task1Properties.xFibonnaciCycles = 2;
-            task1Properties.xFibonnaciCyclesWorstCase = 4;
-            task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, 2, NULL);
+            setupTaskParameters();
+            // struct taskProperties task1Properties;
+            // int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+            // task1Properties.taskNumber = 1;
+            // task1Properties.xDelay = 8000;
+            // task1Properties.xFibonnaciCycles = 2;
+            // task1Properties.xFibonnaciCyclesWorstCase = 4;
+            // task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
 
-            struct taskProperties task2Properties;
-            int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
-            task2Properties.taskNumber = 2;
-            task2Properties.xDelay = 1000;
-            task2Properties.xFibonnaciCycles = 2;
-            task2Properties.xFibonnaciCyclesWorstCase = 4;
-            task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, 2, NULL);
+            // struct taskProperties task2Properties;
+            // int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+            // task2Properties.taskNumber = 2;
+            // task2Properties.xDelay = 10000;
+            // task2Properties.xFibonnaciCycles = 2;
+            // task2Properties.xFibonnaciCyclesWorstCase = 4;
+            // task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
 
-            struct taskProperties task3Properties;
-            int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
-            task3Properties.taskNumber = 3;
-            task3Properties.xDelay = 1400;
-            task3Properties.xFibonnaciCycles = 2;
-            task3Properties.xFibonnaciCyclesWorstCase = 4;
-            task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, 2, NULL);
+            // struct taskProperties task3Properties;
+            // int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+            // task3Properties.taskNumber = 3;
+            // task3Properties.xDelay = 14000;
+            // task3Properties.xFibonnaciCycles = 2;
+            // task3Properties.xFibonnaciCyclesWorstCase = 4;
+            // task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
 
 #ifdef lowPowerMode
             /* Start the scheduller in Low Power Mode */
@@ -146,6 +153,55 @@ int main()
             NVIC_SystemReset();
         }
     }
+    else
+    {
+        KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+        PHY_PowerDown();
+
+        /*
+         * Setup the task properties structure for each task
+         */
+        setupTaskParameters();
+        // struct taskProperties task1Properties;
+        // int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+        // task1Properties.taskNumber = 1;
+        // task1Properties.xDelay = 8000;
+        // task1Properties.xFibonnaciCycles = 2;
+        // task1Properties.xFibonnaciCyclesWorstCase = 4;
+        // task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
+
+        // struct taskProperties task2Properties;
+        // int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+        // task2Properties.taskNumber = 2;
+        // task2Properties.xDelay = 10000;
+        // task2Properties.xFibonnaciCycles = 2;
+        // task2Properties.xFibonnaciCyclesWorstCase = 4;
+        // task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+
+        // struct taskProperties task3Properties;
+        // int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+        // task3Properties.taskNumber = 3;
+        // task3Properties.xDelay = 14000;
+        // task3Properties.xFibonnaciCycles = 2;
+        // task3Properties.xFibonnaciCyclesWorstCase = 4;
+        // task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+
+#ifdef lowPowerMode
+        /* Start the scheduller in Low Power Mode */
+        int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
+        int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+        int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
+        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+#else
+        /* Start the normal scheduller. */
+        vTaskStartScheduler();
+#endif
+        for (;;)
+            ;
+    }
 }
 #else
 int main()
@@ -156,33 +212,33 @@ int main()
     /*
      * Setup the task properties structure for each task
      */
+    setupTaskParameters();
+    // struct taskProperties task1Properties;
+    // int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
+    // task1Properties.taskNumber = 1;
+    // task1Properties.xDelay = 8000;
+    // task1Properties.xFibonnaciCycles = 2;
+    // task1Properties.xFibonnaciCyclesWorstCase = 4;
+    // task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
+    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
 
-    struct taskProperties task1Properties;
-    int task1WorstCase[8] = {0, 1, 0, 0, 1, 1, 0, 1};
-    task1Properties.taskNumber = 1;
-    task1Properties.xDelay = 800;
-    task1Properties.xFibonnaciCycles = 2;
-    task1Properties.xFibonnaciCyclesWorstCase = 4;
-    task1Properties.xPowerConsumptionTestIsWorstCase = task1WorstCase;
-    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, 2, NULL);
+    // struct taskProperties task2Properties;
+    // int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
+    // task2Properties.taskNumber = 2;
+    // task2Properties.xDelay = 10000;
+    // task2Properties.xFibonnaciCycles = 2;
+    // task2Properties.xFibonnaciCyclesWorstCase = 4;
+    // task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
+    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
 
-    struct taskProperties task2Properties;
-    int task2WorstCase[8] = {0, 0, 1, 0, 1, 0, 1, 1};
-    task2Properties.taskNumber = 2;
-    task2Properties.xDelay = 1000;
-    task2Properties.xFibonnaciCycles = 2;
-    task2Properties.xFibonnaciCyclesWorstCase = 4;
-    task2Properties.xPowerConsumptionTestIsWorstCase = task2WorstCase;
-    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, 2, NULL);
-
-    struct taskProperties task3Properties;
-    int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
-    task3Properties.taskNumber = 3;
-    task3Properties.xDelay = 1400;
-    task3Properties.xFibonnaciCycles = 2;
-    task3Properties.xFibonnaciCyclesWorstCase = 4;
-    task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
-    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, 2, NULL);
+    // struct taskProperties task3Properties;
+    // int task3WorstCase[8] = {0, 0, 0, 1, 0, 1, 1, 1};
+    // task3Properties.taskNumber = 3;
+    // task3Properties.xDelay = 14000;
+    // task3Properties.xFibonnaciCycles = 2;
+    // task3Properties.xFibonnaciCyclesWorstCase = 4;
+    // task3Properties.xPowerConsumptionTestIsWorstCase = task3WorstCase;
+    xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
 
 #ifdef lowPowerMode
     /* Start the scheduller in Low Power Mode */
@@ -203,7 +259,7 @@ void vDummyTask(void *pvParameters)
 {
     /* Unpack parameters into local variables for ease of interpretation */
     struct taskProperties *parameters = (struct taskProperties *)pvParameters;
-    const TickType_t xDelay = parameters->xDelay;
+    const TickType_t xDelay = parameters->xDelay / portTICK_PERIOD_MS;
     int baseCycles = parameters->xFibonnaciCycles;               // Takes around 210ms at 96Mhz
     int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
     int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
@@ -213,21 +269,53 @@ void vDummyTask(void *pvParameters)
     TickType_t xLastWakeTime = xTaskGetTickCount();
     int fibonnacciAuxiliar = 0;
     int runNumber = 0;
-
+    long begin,end;
+    double timeInMs;
 
     for (;;)
     {
-
+        //Explicar esse delay no modelo
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
         // Cycle conserving task ready to run
         if (dvfsMode == 2)
             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
 
-        // Actual task code
+
+        pc.printf("[Task %d] Starting calculation Tick Count %d \n"
+                  , taskNumber, xTaskGetTickCount());
+        KIN1_ResetCycleCounter();  /* reset cycle counter */
+        KIN1_EnableCycleCounter(); /* start counting */
         fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+        end = KIN1_GetCycleCounter(); /* get cycle counter */
+        timeInMs = end / (SystemCoreClock / 1000.0);
+        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
+        //           "%f ms \n", taskNumber,
+        //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, fibonnacciAuxiliar, timeInMs);
+                pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
+                  , taskNumber,
+                  timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
+
+        // Actual task code
+    //    fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+    //     fibonnacciAuxiliar -=1;
         runNumber++;
         if (runNumber > 7)
             runNumber = 0;
+        switch (taskNumber)
+        {
+        case 1:
+            myled1 = !(myled1);
+            break;
+        case 2:
+            myled2 = !(myled2);
+            break;
+        case 3:
+            myled3 = !(myled3);
+            break;
 
+        default:
+            break;
+        }
         // Cycle conserving task ready finished running
         if (dvfsMode == 2)
             cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
@@ -238,7 +326,7 @@ void vDummyTask(void *pvParameters)
             printOutNumberAsLeds(taskNumber);
             vTaskSuspendAll();
         }
-        vTaskDelayUntil(&xLastWakeTime, xDelay);
+        
     }
 }
 
@@ -248,6 +336,25 @@ void printOutNumberAsLeds(int n)
     myled2 = n >> 1 & 1;
     myled3 = n >> 2 & 1;
     myled4 = n >> 3 & 1;
+}
+
+void lightUpTaskDebugLed(int taskNumber)
+{
+    switch (taskNumber)
+    {
+    case 1:
+        myled1 = !(myled1);
+        break;
+    case 2:
+        myled2 = !(myled2);
+        break;
+    case 3:
+        myled3 = !(myled3);
+        break;
+
+    default:
+        break;
+    }
 }
 
 #ifdef __cplusplus
