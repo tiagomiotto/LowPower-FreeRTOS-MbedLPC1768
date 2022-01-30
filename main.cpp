@@ -280,7 +280,7 @@ void vDummyTask(void *pvParameters)
         if (dvfsMode == 2)
             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
 
-
+        //Fazer um teste com 1 ciclo fibonnaci só para depois extrapolar, o fato de serem 40 por vez esta a dar problema
         pc.printf("[Task %d] Starting calculation Tick Count %d \n"
                   , taskNumber, xTaskGetTickCount());
         KIN1_ResetCycleCounter();  /* reset cycle counter */
