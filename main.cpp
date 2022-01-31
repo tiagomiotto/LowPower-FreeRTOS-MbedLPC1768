@@ -285,15 +285,28 @@ void vDummyTask(void *pvParameters)
                   , taskNumber, xTaskGetTickCount());
         KIN1_ResetCycleCounter();  /* reset cycle counter */
         KIN1_EnableCycleCounter(); /* start counting */
-        fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+        //fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+
+    long a=1, b=1, i;
+
+    for (i=0; i<=1; i++) {
+        long nextTerm= a+b;
+        a=b;
+        b=nextTerm;
+        if(i%40==0){
+            a=0;
+            b=1;
+        }
+
+
         end = KIN1_GetCycleCounter(); /* get cycle counter */
         timeInMs = end / (SystemCoreClock / 1000.0);
-        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
-        //           "%f ms \n", taskNumber,
+        pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
+                  "%f ms \n", taskNumber,
         //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, fibonnacciAuxiliar, timeInMs);
-                pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
-                  , taskNumber,
-                  timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
+                // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
+                //   , taskNumber,
+                //   timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
 
         // Actual task code
     //    fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
