@@ -1,6 +1,14 @@
 #include "testApplication.h"
 
  
+struct taskProperties task1Properties;
+
+
+struct taskProperties task2Properties;
+
+
+struct taskProperties task3Properties;
+
 #ifdef __cplusplus
 extern "C"
 #endif

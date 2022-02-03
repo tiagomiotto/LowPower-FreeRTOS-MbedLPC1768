@@ -66,7 +66,7 @@ bool deadlinesMissed = false;
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */
 #define magicINTERFACEDISABLE 1
-//#define lowPowerMode 1
+#define lowPowerMode 1
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
 /*
@@ -111,7 +111,7 @@ int main()
             int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
             int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
             int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
-            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, lowPowerMode);
 #else
             /* Start the normal scheduller. */
             vTaskStartScheduler();
@@ -145,10 +145,10 @@ int main()
 
 #ifdef lowPowerMode
         /* Start the scheduller in Low Power Mode */
-        int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-        int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
+        int main_taskWorstCaseComputeTime[3] = {3000, 3000, 1000};
+        int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
         int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
-        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, lowPowerMode);
 #else
         /* Start the normal scheduller. */
         vTaskStartScheduler();
@@ -173,10 +173,10 @@ int main()
 
 #ifdef lowPowerMode
     /* Start the scheduller in Low Power Mode */
-    int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-    int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
-    int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
-    vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, DVFSMODE);
+    int main_taskWorstCaseComputeTime[3] = {3000, 3000, 1000};
+    int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
+    int main_frequencyLevels[7] = {96,88,80, 72, 48, 24, 16};
+    vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
 #else
     /* Start the normal scheduller. */
     vTaskStartScheduler();
@@ -212,19 +212,19 @@ void vDummyTask(void *pvParameters)
 
         // Fazer um teste com 1 ciclo fibonnaci só para depois extrapolar, o fato de serem 40 por vez esta a dar problema
         pc.printf("[Task %d] Starting calculation Tick Count %d \n", taskNumber, xTaskGetTickCount());
-        long a = 1, b = 1, i = 1;
-        KIN1_ResetCycleCounter();  /* reset cycle counter */
-        KIN1_EnableCycleCounter(); /* start counting */
-        // fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+        // long a = 1, b = 1, i = fibonnaciCycles1MS_96Mhz;
+        // KIN1_ResetCycleCounter();  /* reset cycle counter */
+        // KIN1_EnableCycleCounter(); /* start counting */
+        fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
 
-        fibonnacciAuxiliar = fibonnacciCalculation(35);
+        // // fibonnacciAuxiliar = fibonnacciCalculation(i);
 
-        end = KIN1_GetCycleCounter(); /* get cycle counter */
-        timeInMs = end / (SystemCoreClock / 1000.0);
-        pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
-                  "%f ms \n",
-                  taskNumber,
-                  end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, a, timeInMs);
+        // end = KIN1_GetCycleCounter(); /* get cycle counter */
+        // timeInMs = end / (SystemCoreClock / 1000.0);
+        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
+        //           "%f ms \n",
+        //           taskNumber,
+        //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, a, timeInMs);
         // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
         //   , taskNumber,
         //   timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());

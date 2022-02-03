@@ -125,13 +125,15 @@ LED4 = P1_23,
 
 int frequencyLevelSelector(int level)
 {
+	
 	if (level == currentFrequencyLevel)
 		return currentFrequencyLevel;
+	LPC_GPIO1->FIOPIN = (1 << 23);
 	if (level < 0 || level > availableFrequencyLevels)
 	{
 		return currentFrequencyLevel;
 	}
-
+	
 	taskENTER_CRITICAL();
 	currentFrequencyLevel = level;
 	setSystemFrequency(3, 0, mValues[level], 1);
@@ -735,9 +737,11 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 		break;
 	// SVS
 	case 1:
+	
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		
 		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
-		// if(selectedLevel>2) LPC_GPIO1->FIOPIN = (1 << 23);
+		//if(selectedLevel==0) LPC_GPIO1->FIOPIN = (1 << 23);
 		break;
 	// Cycle Conserving no Tickless
 	case 2:
@@ -751,7 +755,7 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 
 		break;
 	}
-	
+	 vTaskStartScheduler();
 }
 
 
