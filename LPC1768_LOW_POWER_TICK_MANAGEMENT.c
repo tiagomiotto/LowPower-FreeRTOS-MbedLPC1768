@@ -128,7 +128,7 @@ int frequencyLevelSelector(int level)
 	
 	if (level == currentFrequencyLevel)
 		return currentFrequencyLevel;
-	LPC_GPIO1->FIOPIN = (1 << 23);
+	
 	if (level < 0 || level > availableFrequencyLevels)
 	{
 		return currentFrequencyLevel;
@@ -742,6 +742,7 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 		
 		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
 		//if(selectedLevel==0) LPC_GPIO1->FIOPIN = (1 << 23);
+		
 		break;
 	// Cycle Conserving no Tickless
 	case 2:
@@ -755,7 +756,7 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 
 		break;
 	}
-	 vTaskStartScheduler();
+	 
 }
 
 

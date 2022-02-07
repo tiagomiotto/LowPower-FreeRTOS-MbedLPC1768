@@ -95,7 +95,7 @@ int main()
              * The reset was not a Push button nor a Power on Reset, meaning the Magic Interface
              * is disabled and the Mbed is out of DEBUG mode
              */
-            KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+            // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
             PHY_PowerDown();
 
             /*
@@ -108,10 +108,12 @@ int main()
 
 #ifdef lowPowerMode
             /* Start the scheduller in Low Power Mode */
-            int main_taskWorstCaseComputeTime[3] = {21, 42, 84};
-            int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
-            int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
-            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, lowPowerMode);
+            int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
+            int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
+            int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
+            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+            pc.baud(9600);
+            vTaskStartScheduler();
 #else
             /* Start the normal scheduller. */
             vTaskStartScheduler();
@@ -132,7 +134,7 @@ int main()
     }
     else
     {
-        KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+        // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
         PHY_PowerDown();
 
         /*
@@ -145,10 +147,12 @@ int main()
 
 #ifdef lowPowerMode
         /* Start the scheduller in Low Power Mode */
-        int main_taskWorstCaseComputeTime[3] = {3000, 3000, 1000};
+        int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
         int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
-        int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
-        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 6, main_frequencyLevels, lowPowerMode);
+        int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
+        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+        pc.baud(9600);
+        vTaskStartScheduler();
 #else
         /* Start the normal scheduller. */
         vTaskStartScheduler();
@@ -173,10 +177,12 @@ int main()
 
 #ifdef lowPowerMode
     /* Start the scheduller in Low Power Mode */
-    int main_taskWorstCaseComputeTime[3] = {3000, 3000, 1000};
+    int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
     int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
-    int main_frequencyLevels[7] = {96,88,80, 72, 48, 24, 16};
+    int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
     vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+    pc.baud(9600);
+    vTaskStartScheduler();
 #else
     /* Start the normal scheduller. */
     vTaskStartScheduler();
@@ -211,21 +217,21 @@ void vDummyTask(void *pvParameters)
             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
 
         // Fazer um teste com 1 ciclo fibonnaci só para depois extrapolar, o fato de serem 40 por vez esta a dar problema
-        pc.printf("[Task %d] Starting calculation Tick Count %d \n", taskNumber, xTaskGetTickCount());
-        // long a = 1, b = 1, i = fibonnaciCycles1MS_96Mhz;
-        // KIN1_ResetCycleCounter();  /* reset cycle counter */
-        // KIN1_EnableCycleCounter(); /* start counting */
+        // pc.printf("[Task %d] Starting calculation Tick Count %d \n", taskNumber, xTaskGetTickCount());
+        // // long a = 1, b = 1, i = fibonnaciCycles1MS_96Mhz;
+        // // KIN1_ResetCycleCounter();  /* reset cycle counter */
+        // // KIN1_EnableCycleCounter(); /* start counting */
         fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
 
         // // fibonnacciAuxiliar = fibonnacciCalculation(i);
 
         // end = KIN1_GetCycleCounter(); /* get cycle counter */
         // timeInMs = end / (SystemCoreClock / 1000.0);
-        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times and %ld, resulting in a compute time of "
+        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times, resulting in a compute time of "
         //           "%f ms \n",
         //           taskNumber,
-        //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, a, timeInMs);
-        // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
+        //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, timeInMs);
+        // // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
         //   , taskNumber,
         //   timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
 
@@ -235,6 +241,7 @@ void vDummyTask(void *pvParameters)
         runNumber++;
         if (runNumber > 7)
             runNumber = 0;
+#if magicINTERFACEDISABLE != 1
         switch (taskNumber)
         {
         case 1:
@@ -250,6 +257,7 @@ void vDummyTask(void *pvParameters)
         default:
             break;
         }
+#endif
         // Cycle conserving task ready finished running
         if (dvfsMode == 2)
             cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());

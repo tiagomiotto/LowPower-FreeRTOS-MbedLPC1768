@@ -3,17 +3,10 @@
 
 long fibonnacciCalculation(long cycles)
 {
-    long a=1, b=1, i, nextTerm;
+    long a=1, b=1, i;
 
     for (i=0; i<=cycles; i++) {
-
-        // if(i%10==0){
-        //     a=0;
-        //     b=1;
-        // }else{
-
-        // }
-                nextTerm= a+b;
+        long nextTerm= a+b;
         a=b;
         b=nextTerm;
     }

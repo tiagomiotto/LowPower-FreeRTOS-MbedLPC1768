@@ -7,8 +7,8 @@
  * The tick hook function.  This compensates
  * the tick count to compensate for frequency changes
  */
-const uint8_t mValues[6] = {36, 30, 27, 18, 9, 6};
-const int frequencyLevels[] = {96,  80, 72,  48,  24,  8};
+const uint8_t mValues[7] = {36, 33 , 30, 27, 18, 9, 6};
+//const int frequencyLevels[] = {96,  80, 72,  48,  24,  8};
 const int staticTickIncrement[] = {0, 0, 0, 0, 0, 1, 2, 3, 5, 11};
 const int periodicTickIncrement[] = {0, 11, 5, 3, 2, 0, 0, 0, 0, 0};
 // const short availableFrequencyLevels = 10;

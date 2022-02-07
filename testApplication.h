@@ -37,6 +37,7 @@ struct taskProperties
 {
     int taskNumber;
     int taskPriority;
+    int taskWorstCaseExecuteTime;
     int xDelay;
     long xFibonnaciCycles;
     long xFibonnaciCyclesWorstCase;
