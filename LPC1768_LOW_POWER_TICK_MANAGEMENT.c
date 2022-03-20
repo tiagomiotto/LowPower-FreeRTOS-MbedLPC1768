@@ -734,12 +734,13 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 	{
 	// Sleep on idle
 	case 0:
+		dvfsMode=0;
 		break;
 	// SVS
 	case 1:
 	
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
-		
+		dvfsMode=1;
 		selectedLevel = staticVoltageScalingFrequencyLevelSelector();
 		//if(selectedLevel==0) LPC_GPIO1->FIOPIN = (1 << 23);
 		
@@ -747,13 +748,14 @@ void vTaskStartLowPowerScheduller(int main_numberOfTasks, int *main_taskWorstCas
 	// Cycle Conserving no Tickless
 	case 2:
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
+		dvfsMode=2;
 		setupCycleConservingDVS();
 		break;
 
 	case 3:
 		setupDVFS(main_numberOfTasks, main_taskWorstCaseComputeTime, main_taskDeadlines, main_availableFrequencyLevels, main_frequencyStages, main_mode);
 		//frequencyLevelSelect(3);
-
+		dvfsMode=2;
 		break;
 	}
 	 

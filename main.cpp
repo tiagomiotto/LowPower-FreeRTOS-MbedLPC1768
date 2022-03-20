@@ -34,6 +34,7 @@ DigitalOut myled4(LED4);
 // void vTaskFibonnaciFixedTime420ms(void *pvParameters);
 // void vTaskFibonnaciDynamicTime(void *pvParameters);
 void printOutNumberAsLeds(int n);
+void lightUpTaskDebugLed(int taskNumber);
 void vDummyTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
 
@@ -102,10 +103,13 @@ int main()
              * Setup the task properties structure for each task
              */
             setupTaskParameters();
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
-            xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-
+            xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
+            xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+            xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+            ConsumptionTest = true;
+            myled1 = 1;
+            myled2 = 1;
+            myled3 = 1;
 #ifdef lowPowerMode
             /* Start the scheduller in Low Power Mode */
             int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
@@ -141,11 +145,14 @@ int main()
          * Setup the task properties structure for each task
          */
         setupTaskParameters();
-        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
-        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
-        xTaskCreate(vDummyTask, "Dummy Task", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-
+        xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
+        xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+        xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+        myled1 = 1;
+        myled2 = 1;
+        myled3 = 1;
 #ifdef lowPowerMode
+
         /* Start the scheduller in Low Power Mode */
         int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
         int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
@@ -175,6 +182,9 @@ int main()
     xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
     xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
 
+    myled1 = 1;
+    myled2 = 1;
+    myled3 = 1;
 #ifdef lowPowerMode
     /* Start the scheduller in Low Power Mode */
     int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
@@ -206,58 +216,30 @@ void vDummyTask(void *pvParameters)
     TickType_t xLastWakeTime = 0;
     int fibonnacciAuxiliar = 0;
     int runNumber = 0;
-    long begin, end;
-    double timeInMs;
 
+    myled1 = 0;
+    myled2 = 0;
+    myled3 = 0;
     for (;;)
     {
 
         // Cycle conserving task ready to run
         if (dvfsMode == 2)
             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+        // If not testing light up leds
+        if (!ConsumptionTest)
+            lightUpTaskDebugLed(taskNumber);
 
-        // Fazer um teste com 1 ciclo fibonnaci só para depois extrapolar, o fato de serem 40 por vez esta a dar problema
-        // pc.printf("[Task %d] Starting calculation Tick Count %d \n", taskNumber, xTaskGetTickCount());
-        // // long a = 1, b = 1, i = fibonnaciCycles1MS_96Mhz;
-        // // KIN1_ResetCycleCounter();  /* reset cycle counter */
-        // // KIN1_EnableCycleCounter(); /* start counting */
         fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
 
-        // // fibonnacciAuxiliar = fibonnacciCalculation(i);
-
-        // end = KIN1_GetCycleCounter(); /* get cycle counter */
-        // timeInMs = end / (SystemCoreClock / 1000.0);
-        // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times, resulting in a compute time of "
-        //           "%f ms \n",
-        //           taskNumber,
-        //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, timeInMs);
-        // // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
-        //   , taskNumber,
-        //   timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
-
-        // Actual task code
-        //    fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
-        //     fibonnacciAuxiliar -=1;
         runNumber++;
         if (runNumber > 7)
             runNumber = 0;
-#if magicINTERFACEDISABLE != 1
-        switch (taskNumber)
-        {
-        case 1:
-            myled1 = !(myled1);
-            break;
-        case 2:
-            myled2 = !(myled2);
-            break;
-        case 3:
-            myled3 = !(myled3);
-            break;
 
-        default:
-            break;
-        }
-#endif
+        // If not testing light up leds
+        if (!ConsumptionTest)
+            lightUpTaskDebugLed(taskNumber);
+
         // Cycle conserving task ready finished running
         if (dvfsMode == 2)
             cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
@@ -338,6 +320,88 @@ extern "C"
         pc.printf("Stack Overflow error !! Hello, world!\n");
     }
 }
+
+// void vDummyTask(void *pvParameters)
+// {
+//     /* Unpack parameters into local variables for ease of interpretation */
+//     struct taskProperties *parameters = (struct taskProperties *)pvParameters;
+//     const TickType_t xDelay = parameters->xDelay / portTICK_PERIOD_MS;
+//     int baseCycles = parameters->xFibonnaciCycles;               // Takes around 210ms at 96Mhz
+//     int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
+//     int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
+//     int taskNumber = parameters->taskNumber;
+
+//     /* Define local variables for counting runs and delays */
+//     TickType_t xLastWakeTime = 0;
+//     int fibonnacciAuxiliar = 0;
+//     int runNumber = 0;
+//     long begin, end;
+//     double timeInMs;
+
+//     for (;;)
+//     {
+
+//         // Cycle conserving task ready to run
+//         if (dvfsMode == 2)
+//             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+
+//         // Fazer um teste com 1 ciclo fibonnaci só para depois extrapolar, o fato de serem 40 por vez esta a dar problema
+//         // pc.printf("[Task %d] Starting calculation Tick Count %d \n", taskNumber, xTaskGetTickCount());
+//         // // long a = 1, b = 1, i = fibonnaciCycles1MS_96Mhz;
+//         // // KIN1_ResetCycleCounter();  /* reset cycle counter */
+//         // // KIN1_EnableCycleCounter(); /* start counting */
+//         fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+
+//         // // fibonnacciAuxiliar = fibonnacciCalculation(i);
+
+//         // end = KIN1_GetCycleCounter(); /* get cycle counter */
+//         // timeInMs = end / (SystemCoreClock / 1000.0);
+//         // pc.printf("[Task %d] Took %ld cycles at %ld to calculate fibonnaci %d times, resulting in a compute time of "
+//         //           "%f ms \n",
+//         //           taskNumber,
+//         //           end, SystemCoreClock, isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles, timeInMs);
+//         // // pc.printf("[Task %d] Compute time: %f ms, run %d, isWorstCase: %d, Tick Count %d \n"
+//         //   , taskNumber,
+//         //   timeInMs, runNumber, isWorstCase[runNumber], xTaskGetTickCount());
+
+//         // Actual task code
+//         //    fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+//         //     fibonnacciAuxiliar -=1;
+//         runNumber++;
+//         if (runNumber > 7)
+//             runNumber = 0;
+// #if magicINTERFACEDISABLE != 1
+//         switch (taskNumber)
+//         {
+//         case 1:
+//             myled1 = !(myled1);
+//             break;
+//         case 2:
+//             myled2 = !(myled2);
+//             break;
+//         case 3:
+//             myled3 = !(myled3);
+//             break;
+
+//         default:
+//             break;
+//         }
+// #endif
+//         // Cycle conserving task ready finished running
+//         if (dvfsMode == 2)
+//             cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+
+//         // If the deadline is missed suspend all and print out a code
+//         if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
+//         {
+//             printOutNumberAsLeds(taskNumber);
+//             vTaskSuspendAll();
+//         }
+//         // Explicar esse delay no modelo
+//         vTaskDelayUntil(&xLastWakeTime, xDelay);
+//     }
+// }
+
 // int main()
 // {
 // #define DVFSMODE 2
