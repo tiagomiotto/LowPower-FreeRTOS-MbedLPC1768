@@ -159,9 +159,11 @@ int main()
         int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
         vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
         pc.baud(9600);
+        pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d", lowPowerMode, SystemCoreClock );
         vTaskStartScheduler();
 #else
         /* Start the normal scheduller. */
+        pc.printf("[Starting] Normal Mode  Starting Frequency %d",  SystemCoreClock );
         vTaskStartScheduler();
 #endif
         for (;;)
@@ -192,9 +194,11 @@ int main()
     int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
     vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
     pc.baud(9600);
+    pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d", lowPowerMode, SystemCoreClock );
     vTaskStartScheduler();
 #else
     /* Start the normal scheduller. */
+    pc.printf("[Starting] Normal Mode  Starting Frequency %d",  SystemCoreClock );
     vTaskStartScheduler();
 #endif
     for (;;)
