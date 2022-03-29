@@ -66,8 +66,8 @@ bool deadlinesMissed = false;
 
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */
-#define magicINTERFACEDISABLE 1
-#define lowPowerMode 1
+// #define magicINTERFACEDISABLE 1
+#define lowPowerMode 2
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
 /*
@@ -106,17 +106,19 @@ int main()
             xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
             xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
             xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-            ConsumptionTest = true;
+            
             myled1 = 1;
             myled2 = 1;
             myled3 = 1;
+            ConsumptionTest=true;
 #ifdef lowPowerMode
             /* Start the scheduller in Low Power Mode */
+   
             int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
             int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
             int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
             vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
-            pc.baud(9600);
+            if (!ConsumptionTest)pc.baud(9600);
             vTaskStartScheduler();
 #else
             /* Start the normal scheduller. */
@@ -151,6 +153,7 @@ int main()
         myled1 = 1;
         myled2 = 1;
         myled3 = 1;
+        ConsumptionTest=true;
 #ifdef lowPowerMode
 
         /* Start the scheduller in Low Power Mode */
@@ -158,12 +161,15 @@ int main()
         int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
         int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
         vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+         if (!ConsumptionTest){
         pc.baud(9600);
-        pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d", lowPowerMode, SystemCoreClock );
+        pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d\n", lowPowerMode, SystemCoreClock);
+         }
+
         vTaskStartScheduler();
 #else
         /* Start the normal scheduller. */
-        pc.printf("[Starting] Normal Mode  Starting Frequency %d",  SystemCoreClock );
+        if (!ConsumptionTest)pc.printf("[Starting] Normal Mode  Starting Frequency %d\n", SystemCoreClock);
         vTaskStartScheduler();
 #endif
         for (;;)
@@ -173,7 +179,7 @@ int main()
 #else
 int main()
 {
-    KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+    //KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
     PHY_PowerDown();
 
     /*
@@ -183,7 +189,7 @@ int main()
     xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
     xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
     xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-
+    // ConsumptionTest=true;
     myled1 = 1;
     myled2 = 1;
     myled3 = 1;
@@ -192,13 +198,17 @@ int main()
     int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
     int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
     int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
+
     vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+        if (!ConsumptionTest){
     pc.baud(9600);
-    pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d", lowPowerMode, SystemCoreClock );
+    pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d\n", lowPowerMode, SystemCoreClock);
+    }
+
     vTaskStartScheduler();
 #else
     /* Start the normal scheduller. */
-    pc.printf("[Starting] Normal Mode  Starting Frequency %d",  SystemCoreClock );
+    if (!ConsumptionTest)pc.printf("[Starting] Normal Mode  Starting Frequency %d\n", SystemCoreClock);
     vTaskStartScheduler();
 #endif
     for (;;)
@@ -224,17 +234,26 @@ void vDummyTask(void *pvParameters)
     myled1 = 0;
     myled2 = 0;
     myled3 = 0;
+
+    long start, end;
     for (;;)
     {
-
+            
         // Cycle conserving task ready to run
         if (dvfsMode == 2)
             cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
         // If not testing light up leds
         if (!ConsumptionTest)
+        {
             lightUpTaskDebugLed(taskNumber);
-
-        fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+            start = xTaskGetTickCount();
+            fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+            end = xTaskGetTickCount();
+            pc.baud(9600);
+            pc.printf("[Task %d] Ticks taken %d to calculate | Time Taken %d\n", SystemCoreClock, end - start, (end - start) / portTICK_PERIOD_MS);
+        }
+        else
+            fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
 
         runNumber++;
         if (runNumber > 7)
@@ -292,7 +311,7 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    Sleep();
+    //Sleep();
     // DeepSleep();
     // PowerDown();
     // DeepPowerDown();
