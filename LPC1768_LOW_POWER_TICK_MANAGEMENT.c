@@ -59,7 +59,7 @@ const int default_availableFrequencyLevels = 8;
 // volatile int currentFrequencyLevel = 0;
 volatile short periodicTickIncrementCount = 0;
 volatile bool frequencyChanged = false;
-volatile bool cycleConservingUsed = false;
+
 
 // extern int *deadlines[];
 // extern int mainTaskPeriods[];
@@ -464,11 +464,15 @@ extern "C"
 {
 
 	numberOfTasks = main_numberOfTasks;
-	taskWorstCaseComputeTime = main_taskWorstCaseComputeTime;
-	taskDeadlines = main_taskDeadlines;
+	taskWorstCaseComputeTime = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
+	memcpy(taskWorstCaseComputeTime, main_taskWorstCaseComputeTime, sizeof(int) * numberOfTasks);
+
+	taskDeadlines = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
+	memcpy(taskDeadlines, main_taskDeadlines, sizeof(int) * numberOfTasks);
 	mode = main_mode;
 	availableFrequencyLevels = main_availableFrequencyLevels;
-	frequencyStages = main_frequencyStages;
+	frequencyStages = (int *)pvPortMalloc(availableFrequencyLevels * sizeof(int));
+	memcpy(frequencyStages, main_frequencyStages, sizeof(int) * availableFrequencyLevels);
 }
 
 #ifdef __cplusplus
@@ -478,8 +482,12 @@ extern "C"
 	default_setupDVFS(int main_numberOfTasks, int *main_taskWorstCaseComputeTime, int *main_taskDeadlines, int main_mode)
 {
 	numberOfTasks = main_numberOfTasks;
-	taskWorstCaseComputeTime = main_taskWorstCaseComputeTime;
-	taskDeadlines = main_taskDeadlines;
+	taskWorstCaseComputeTime = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
+	memcpy(taskWorstCaseComputeTime, main_taskWorstCaseComputeTime, sizeof(int) * numberOfTasks);
+
+	taskDeadlines = (int *)pvPortMalloc(numberOfTasks * sizeof(int));
+	memcpy(taskDeadlines, main_taskDeadlines, sizeof(int) * numberOfTasks);
+	
 	mode = main_mode;
 	availableFrequencyLevels = default_availableFrequencyLevels;
 	frequencyStages = default_frequencyStages;
@@ -594,7 +602,7 @@ static int findNextDeadline(int *deadlinesArray, int currentTick)
 int setupCycleConservingDVS()
 {
 
-	mode = 0;
+
 	frequencyChosenSVS = staticVoltageScalingFrequencyLevelSelector();
 	if (frequencyChosenSVS == -1)
 		return -1;
@@ -608,8 +616,9 @@ int setupCycleConservingDVS()
 	for (i = 0; i < numberOfTasks; i++)
 	{
 		c_lefti[i] = taskWorstCaseComputeTime[i];
+		d_i[i]=0;
 	}
-	cycleConservingUsed = true;
+	
 	return frequencyChosenSVS;
 }
 
@@ -631,7 +640,7 @@ static int cycleConservingDVSFrequencySelector(int currentTick)
 		totalD += d_i[i];
 	}
 
-	float minimumFrequency = ((totalD * 1.0) / maxTicksUntilNextDeadline) * frequencyStages[0];
+	float minimumFrequency = ((totalD * 1.0f) / maxTicksUntilNextDeadline * 1.0f) * frequencyStages[0];
 
 	/* Can be optimized if we have a lot of frequencies to choose from, by only searching the bottom or top frequencies
 	** Here it is not necessary as we have only 10
@@ -652,7 +661,7 @@ static int cycleConservingDVSFrequencySelector(int currentTick)
 	// Esta a causar erros aqui for some reason (devia ser assim o codigo antigo quando calculava
 	// para ir pra o nivel maximo nao ia, fazendo com que deadlines fossem missed)
 	frequencyLevelSelector(desiredFrequencyLevel);
-	return desiredFrequencyLevel;
+	return maxTicksUntilNextDeadline;
 }
 
 static void cycleConservingDVSAllocateCycles(int k)
@@ -679,16 +688,17 @@ int cycleConservingDVSTaskReady(int taskNumber, int currentTick, int taskNextExe
 	c_lefti[taskNumber] = taskWorstCaseComputeTime[taskNumber];
 	int s_m = findNextDeadline(taskDeadlines, currentTick) - currentTick;
 
-	float ceilAux = (s_m * (frequencyStages[frequencyChosenSVS] * 1.0) / (frequencyStages[0] * 1.0));
-	if (ceilAux != (int)ceilAux)
-		ceilAux = (int)ceilAux + 1; // If true, there is floating point, hence we remove and add one to ceil the value
-
-	int s_j = ceilAux;
+	// float ceilAux = (s_m * (frequencyStages[frequencyChosenSVS] * 1.0) / (frequencyStages[0] * 1.0));
+	// if (ceilAux != (int)ceilAux)
+	// 	ceilAux = (int)ceilAux + 1; // If true, there is floating point, hence we remove and add one to ceil the value
+	int aux =0;
+	int s_j =  (s_m * (frequencyStages[frequencyChosenSVS] * 1.0f) / (frequencyStages[0] * 1.0f));;
 
 	// int s_j = ceil(s_m * (frequencyStages[currentFrequencyLevel] * 1.0) / (frequencyStages[0] * 1.0));
 	cycleConservingDVSAllocateCycles(s_j);
 
-	return cycleConservingDVSFrequencySelector(currentTick);
+	aux = cycleConservingDVSFrequencySelector(currentTick);
+	return aux;
 }
 
 int cycleConservingDVSTaskComplete(int taskNumber, int currentTick)
@@ -704,9 +714,9 @@ bool sufficientSchedulabilityTest(int main_numberOfTasks, int *taskWorstCaseComp
 	float utilization = 0, utilizationBound = 0;
 	int i = 0;
 
-	utilizationBound = numberOfTasks * (pow(2, (1.0 / numberOfTasks)) - 1);
+	utilizationBound = main_numberOfTasks * (pow(2, (1.0 / main_numberOfTasks)) - 1);
 
-	for (i = 0; i < numberOfTasks; i++)
+	for (i = 0; i < main_numberOfTasks; i++)
 	{
 		utilization += taskWorstCaseComputeTime[i] / taskDeadlines[i];
 	}
