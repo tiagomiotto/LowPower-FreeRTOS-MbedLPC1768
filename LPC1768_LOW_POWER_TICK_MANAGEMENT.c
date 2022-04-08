@@ -525,23 +525,7 @@ extern "C"
 	selectedFrequencyLevel = i - 1;
 
 	return frequencyLevelSelect(selectedFrequencyLevel);
-	// return currentFrequencyLevel;
-	// }
 
-	// if (mode == 1) //EDF
-	// {
-	// 	while (validAlpha && i < availableFrequencyLevels)
-	// 	{
-	// 		alphaToTest = (frequencyStages[i] * 1.0f) / (frequencyStages[0] * 1.0f);
-	// 		validAlpha = staticVoltageScalingEDF_Test(alphaToTest);
-	// 		if (validAlpha)
-	// 			i++;
-	// 	}
-	// 	if(!validAlpha && i==0) return -1;
-	// 	selectedFrequencyLevel = i - 1;
-	// 	currentFrequencyLevel = selectedFrequencyLevel;
-	// 	return frequencyLevelSelector(selectedFrequencyLevel);
-	// }
 }
 
 bool staticVoltageScalingRM_Test(float alpha)

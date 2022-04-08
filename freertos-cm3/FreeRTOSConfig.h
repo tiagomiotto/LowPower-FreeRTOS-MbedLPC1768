@@ -160,7 +160,7 @@ standard names. */
 #define dynamicFrequencySysTickHandler SysTick_Handler
 #define portSUPPRESS_TICKS_AND_SLEEP(xIdleTime) vApplicationSleep(xIdleTime)
 #define configUSE_TICKLESS_IDLE 0
-#define configUSE_IDLE_HOOK 0
+#define configUSE_IDLE_HOOK 1
 
 
 #else

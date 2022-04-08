@@ -18,7 +18,6 @@
 
 #include "cycleCounter.h"
 
-//#define cycleCounter 1
 
 DigitalOut myled1(LED1);
 DigitalOut myled3(LED3);
@@ -28,41 +27,14 @@ DigitalOut myled4(LED4);
 #define ld2 18 // P2_1
 
 /*-----------------------------------------------------------*/
-// void vTask1(void *pvParameters);
-// void vTask2(void *pvParameters);
-// void vTaskFibonnaciFixedTime210ms(void *pvParameters);
-// void vTaskFibonnaciFixedTime420ms(void *pvParameters);
-// void vTaskFibonnaciDynamicTime(void *pvParameters);
 void printOutNumberAsLeds(int n);
 void lightUpTaskDebugLed(int taskNumber);
 void vDummyTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
 
-// volatile long contador = 0;
-// volatile long deadline1 = 0;
-// volatile long deadline2 = 0;
-// volatile long dealine3 = 0;
-
-// extern struct taskProperties task1Properties;
-// extern struct taskProperties task2Properties;
-// extern struct taskProperties task3Properties;
-
-// struct taskProperties
-// {
-//     int taskNumber;
-//     int xDelay;
-//     int xFibonnaciCycles;
-//     int xFibonnaciCyclesWorstCase;
-//     int *xPowerConsumptionTestIsWorstCase;
-// };
-
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
-// Add the conversion to ticks ( it is currently in ticks but we want in ms)
-int fixedFibonnaciTaskPeriod210ms = 400;
-int fixedFibonnaciTaskPeriod420ms = 500;
-int dynamicFibonnaciTaskPeriod = 700;
+
 bool ConsumptionTest = false;
-bool deadlinesMissed = false;
 
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */

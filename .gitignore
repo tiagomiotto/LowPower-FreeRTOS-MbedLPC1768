@@ -1,4 +1,6 @@
-BUILD/*
+*BUILD/*
 .*/
 .vscode/*
 .temp/*
+*.o
+*.json

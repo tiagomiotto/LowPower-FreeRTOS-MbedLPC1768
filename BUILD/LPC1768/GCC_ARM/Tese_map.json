@@ -3,22 +3,22 @@
         "module": "BUILD\\LPC1768", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": -1083, 
+            ".text-delta": 0, 
             ".bss": 17097, 
             ".data": 16, 
             ".bss-delta": 0, 
-            ".text": 5585
+            ".text": 5629
         }
     }, 
     {
         "module": "[fill]", 
         "size": {
-            ".data-delta": 1, 
-            ".text-delta": -1, 
+            ".data-delta": 0, 
+            ".text-delta": 0, 
             ".bss": 31, 
             ".data": 16, 
             ".bss-delta": 0, 
-            ".text": 638
+            ".text": 642
         }
     }, 
     {
@@ -36,22 +36,11 @@
         "module": "[lib]\\gcc.a", 
         "size": {
             ".data-delta": 0, 
-            ".text-delta": -160, 
+            ".text-delta": 0, 
             ".bss": 0, 
             ".data": 0, 
             ".bss-delta": 0, 
             ".text": 4692
-        }
-    }, 
-    {
-        "module": "[lib]\\m.a", 
-        "size": {
-            ".data-delta": -1, 
-            ".text-delta": -4528, 
-            ".bss": 0, 
-            ".data": 0, 
-            ".bss-delta": 0, 
-            ".text": 0
         }
     }, 
     {
@@ -90,9 +79,9 @@
     {
         "summary": {
             "static_ram": 20596, 
-            "total_flash_delta": -5772, 
+            "total_flash_delta": 0, 
             "static_ram_delta": 0, 
-            "total_flash": 54631
+            "total_flash": 54679
         }
     }
 ]
