@@ -19,6 +19,10 @@ extern volatile bool frequencyChanged;
 extern "C" 
 #endif
 short dvfsMode;
+
+#ifdef __cplusplus
+extern "C" 
+#endif
 int frequencyLevelSelector(int level);
 
 void dynamicFrequencySysTickHandler(void);

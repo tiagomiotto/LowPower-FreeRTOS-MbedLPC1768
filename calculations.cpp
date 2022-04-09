@@ -5,7 +5,7 @@ long fibonnacciCalculation(long cycles)
 {
     long a=0, b=1, i;
 
-    for (i=0; i<=cycles; i++) {
+    for (i=0; i<cycles; i++) {
         long nextTerm= a+b;
         a=b;
         b=nextTerm;

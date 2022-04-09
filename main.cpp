@@ -30,6 +30,7 @@ DigitalOut myled4(LED4);
 void printOutNumberAsLeds(int n);
 void lightUpTaskDebugLed(int taskNumber);
 void vDummyTask(void *pvParameters);
+void vFrequencySweepTask(void *pvParameters);
 Serial pc(USBTX, USBRX);
 
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
@@ -39,7 +40,7 @@ bool ConsumptionTest = false;
 // DEBUG VARIABLES
 /* Turn Off Magic Interface */
 #define magicINTERFACEDISABLE 1
-// #define lowPowerMode 2
+#define lowPowerMode 2
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
 /*
@@ -75,9 +76,10 @@ int main()
              * Setup the task properties structure for each task
              */
             setupTaskParameters();
-            xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
-            xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
-            xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+            // xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
+            // xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+            // xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+            xTaskCreate(vFrequencySweepTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
 
             myled1 = 1;
             myled2 = 1;
@@ -259,8 +261,44 @@ void vDummyTask(void *pvParameters)
     }
 }
 
+void vFrequencySweepTask(void *pvParameters){
+        /* Unpack parameters into local variables for ease of interpretation */
+    struct taskProperties *parameters = (struct taskProperties *)pvParameters;
+    const TickType_t xDelay = 2000 / portTICK_PERIOD_MS;
+    int baseCycles = parameters->xFibonnaciCycles;               // Takes around 210ms at 96Mhz
+    int worstCaseCycles = parameters->xFibonnaciCyclesWorstCase; // Takes around 210ms at 96Mhz
+    int *isWorstCase = parameters->xPowerConsumptionTestIsWorstCase;
+    int taskNumber = parameters->taskNumber;
+
+    int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
+
+        /* Define local variables for counting runs and delays */
+    TickType_t xLastWakeTime = 0;
+    int fibonnacciAuxiliar = 0;
+    int runNumber = 0;
+    int cycles = 0;
+    myled1 = 0;
+    myled2 = 0;
+    myled3 = 0;
+
+    long start, end;
+    for (;;)
+    {
+        if(runNumber<7){
+        cycles=baseCycles*(main_frequencyLevels[runNumber]*1.0f/main_frequencyLevels[0]*1.0f);
+        frequencyLevelSelector(runNumber);
+        runNumber++;
+        }
+
+        fibonnacciAuxiliar = fibonnacciCalculation(cycles);
+
+        // Explicar esse delay no modelo
+        vTaskDelayUntil(&xLastWakeTime, xDelay);
+    }
+}
 void printOutNumberAsLeds(int n)
 {
+    n++;
     myled1 = n & 1;
     myled2 = n >> 1 & 1;
     myled3 = n >> 2 & 1;
@@ -271,13 +309,13 @@ void lightUpTaskDebugLed(int taskNumber)
 {
     switch (taskNumber)
     {
-    case 1:
+    case 0:
         myled1 = !(myled1);
         break;
-    case 2:
+    case 1:
         myled2 = !(myled2);
         break;
-    case 3:
+    case 2:
         myled3 = !(myled3);
         break;
 
@@ -292,7 +330,7 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    // Sleep();
+    Sleep();
     //  DeepSleep();
     //  PowerDown();
     //  DeepPowerDown();
