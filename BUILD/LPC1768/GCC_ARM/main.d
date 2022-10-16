@@ -68,7 +68,7 @@ BUILD\LPC1768\GCC_ARM\main.o: main.cpp \
  mbed/platform/ScopedRamExecutionLock.h mbed/platform/mbed_stats.h \
  mbed/platform/Callback.h mbed/platform/FunctionPointer.h \
  mbed/platform/ScopedLock.h freertos-cm3/src/include/FreeRTOS.h \
- freertos-cm3/FreeRTOSConfig.h TARGET_LPC1768_N/LPC17xx.h \
+ freertos-cm3/FreeRTOSConfig.h TARGET_LPC1768_N/LPC17xx.h config.h \
  freertos-cm3/src/include/projdefs.h freertos-cm3/src/include/portable.h \
  freertos-cm3/src/include/deprecated_definitions.h \
  freertos-cm3/src/portable/RVDS/ARM_CM3/portmacro.h \
@@ -77,4 +77,4 @@ BUILD\LPC1768\GCC_ARM\main.o: main.cpp \
  PowerControl/EthernetPowerControl.h PowerControl/PowerControl.h \
  ClockControl/ClockControl.h calculations.h RTC/RTC.h \
  TARGET_LPC1768_N/LPC17xx.h LPC1768_RTC/lpc1768_rtc.h testApplication.h \
- LPC1768_LOW_POWER_TICK_MANAGEMENT.h TaskConfiguration.h cycleCounter.h
+ LPC1768_LOW_POWER_TICK_MANAGEMENT.h config.h cycleCounter.h

@@ -14,7 +14,7 @@
 
 #include "LPC1768_LOW_POWER_TICK_MANAGEMENT.h"
 
-#include "TaskConfiguration.h"
+#include "config.h"
 
 #include "cycleCounter.h"
 
@@ -24,7 +24,7 @@ DigitalOut myled3(LED3);
 DigitalOut myled2(LED2);
 DigitalOut myled4(LED4);
 
-#define ld2 18 // P2_1
+// #define ld2 18 // P2_1
 
 /*-----------------------------------------------------------*/
 void printOutNumberAsLeds(int n);
@@ -35,26 +35,24 @@ Serial pc(USBTX, USBRX);
 
 // Shunt_cal = 13107.2 * 10^6 * (200ma/2^19) *0.1 Ohm = 500
 
-bool ConsumptionTest = false;
+bool ConsumptionTest = configCONSUMPTION_TEST;
 
 // DEBUG VARIABLES
-/* Turn Off Magic Interface */
-#define magicINTERFACEDISABLE 1
-#define lowPowerMode 2
+
 DigitalIn vUSBIN(p10); // USED TO NOT TURN OFF THE MAGIC INTERFACE WHEN CONNECTED TO PC - It is connected to VUSB
 
 /*
- * When magicINTERFACEDISABLE is set to one, run the alternative main code that will
+ * When config_MAGIC_INTERFACE_DISABLE is set to one, run the alternative main code that will
  * disable the Magic Intraface from the Mbed LPC1768 before preparing the application
  * and the FreeRTOS code to run
  */
-#if magicINTERFACEDISABLE == 1
+#if config_MAGIC_INTERFACE_DISABLE == 1
 int main()
 {
 
     /* Check if the USB cable is connected */
     int usbCONNECTED = vUSBIN;
-    if (usbCONNECTED == 0)
+    if (usbCONNECTED == 0) //USB not Connected, disable the MAGIC Interface
     {
 
         /*
@@ -70,29 +68,36 @@ int main()
              * is disabled and the Mbed is out of DEBUG mode
              */
             // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
-            PHY_PowerDown();
+        // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
+        PHY_PowerDown();
 
-            /*
-             * Setup the task properties structure for each task
-             */
-            setupTaskParameters();
-            // xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
-            // xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
-            // xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-            xTaskCreate(vFrequencySweepTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+        /*
+         * Setup the task properties structure for each task
+         */
+        setupTaskParameters();
+        xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
+        xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
+        xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
+        // myled1 = 1;
+        // myled2 = 1;
+        // myled3 = 1;
+        // ConsumptionTest=true;
+#ifdef configDYNAMIC_FREQUENCY_LOW_POWER_MODE
 
-            myled1 = 1;
-            myled2 = 1;
-            myled3 = 1;
-            ConsumptionTest = true;
-#ifdef lowPowerMode
-            /* Start the scheduller in Low Power Mode */
+        /* Start the scheduller in Low Power Mode */
+        int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS,
+                                                task2Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS, task3Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS};
+        int main_taskDeadlines[3] = {task1Properties.xDelay / portTICK_PERIOD_MS, task2Properties.xDelay / portTICK_PERIOD_MS,
+                                     task3Properties.xDelay / portTICK_PERIOD_MS};
+        int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
+        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, configDYNAMIC_FREQUENCY_LOW_POWER_MODE);
+        if (!ConsumptionTest)
+        {
+            pc.baud(9600);
+            pc.printf("[Starting at %d] Low Power Mode %d  Starting Frequency %\n", SystemCoreClock, configDYNAMIC_FREQUENCY_LOW_POWER_MODE);
+        }
 
-            int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime, task2Properties.taskWorstCaseExecuteTime, task3Properties.taskWorstCaseExecuteTime};
-            int main_taskDeadlines[3] = {task1Properties.xDelay, task2Properties.xDelay, task3Properties.xDelay};
-            int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
-            vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
-            vTaskStartScheduler();
+        vTaskStartScheduler();
 #else
             /* Start the normal scheduller. */
             vTaskStartScheduler();
@@ -111,7 +116,7 @@ int main()
             NVIC_SystemReset();
         }
     }
-    else
+    else //USB Connected, don't disable the MAGIC Interface
     {
         // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
         PHY_PowerDown();
@@ -123,11 +128,11 @@ int main()
         xTaskCreate(vDummyTask, "Dummy Task 1", configMINIMAL_STACK_SIZE * 4, &task1Properties, task1Properties.taskPriority, NULL);
         xTaskCreate(vDummyTask, "Dummy Task 2", configMINIMAL_STACK_SIZE * 4, &task2Properties, task2Properties.taskPriority, NULL);
         xTaskCreate(vDummyTask, "Dummy Task 3", configMINIMAL_STACK_SIZE * 4, &task3Properties, task3Properties.taskPriority, NULL);
-        myled1 = 1;
-        myled2 = 1;
-        myled3 = 1;
+        // myled1 = 1;
+        // myled2 = 1;
+        // myled3 = 1;
         // ConsumptionTest=true;
-#ifdef lowPowerMode
+#ifdef configDYNAMIC_FREQUENCY_LOW_POWER_MODE
 
         /* Start the scheduller in Low Power Mode */
         int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS,
@@ -135,25 +140,25 @@ int main()
         int main_taskDeadlines[3] = {task1Properties.xDelay / portTICK_PERIOD_MS, task2Properties.xDelay / portTICK_PERIOD_MS,
                                      task3Properties.xDelay / portTICK_PERIOD_MS};
         int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
-        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+        vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, configDYNAMIC_FREQUENCY_LOW_POWER_MODE);
         if (!ConsumptionTest)
         {
             pc.baud(9600);
-            pc.printf("[Starting at %d] Low Power Mode %d  Starting Frequency %\n", SystemCoreClock, lowPowerMode);
+            pc.printf("[USB - Starting at %d] Low Power Mode %d  Starting Frequency %\n", SystemCoreClock, configDYNAMIC_FREQUENCY_LOW_POWER_MODE);
         }
 
         vTaskStartScheduler();
 #else
         /* Start the normal scheduller. */
         if (!ConsumptionTest)
-            pc.printf("[Starting] Normal Mode  Starting Frequency %d\n", SystemCoreClock);
+            pc.printf("[USB Starting] Normal Mode  Starting Frequency %d\n", SystemCoreClock);
         vTaskStartScheduler();
 #endif
         for (;;)
             ;
     }
 }
-#else
+#else // No MAGIC Interface PowerDown
 int main()
 {
     // KIN1_InitCycleCounter(); /* enable DWT hardware for cycle counting */
@@ -170,7 +175,7 @@ int main()
     myled1 = 1;
     myled2 = 1;
     myled3 = 1;
-#ifdef lowPowerMode
+#ifdef configDYNAMIC_FREQUENCY_LOW_POWER_MODE
     /* Start the scheduller in Low Power Mode */
     int main_taskWorstCaseComputeTime[3] = {task1Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS,
                                             task2Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS, task3Properties.taskWorstCaseExecuteTime / portTICK_PERIOD_MS};
@@ -178,11 +183,11 @@ int main()
                                  task3Properties.xDelay / portTICK_PERIOD_MS};
     int main_frequencyLevels[7] = {96, 88, 80, 72, 48, 24, 16};
 
-    vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, lowPowerMode);
+    vTaskStartLowPowerScheduller(3, main_taskWorstCaseComputeTime, main_taskDeadlines, 7, main_frequencyLevels, configDYNAMIC_FREQUENCY_LOW_POWER_MODE);
     if (!ConsumptionTest)
     {
         pc.baud(9600);
-        pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d\n", lowPowerMode, SystemCoreClock);
+        pc.printf("[Starting] Low Power Mode %d  Starting Frequency %d\n", configDYNAMIC_FREQUENCY_LOW_POWER_MODE, SystemCoreClock);
     }
 
     vTaskStartScheduler();
@@ -222,33 +227,36 @@ void vDummyTask(void *pvParameters)
 
         // Cycle conserving task ready to run
         if (dvfsMode == 2)
-            aux = cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
+            aux= cycleConservingDVSTaskReady(taskNumber, xTaskGetTickCount(), xLastWakeTime + xDelay);
         // If not testing light up leds
         if (!ConsumptionTest)
         {
             pc.baud(9600);
-            // pc.printf("\n[Task %d:%d,%d,Tick %d]\n",xTaskGetTickCount(), taskNumber, aux, SystemCoreClock/1000000 );
+            pc.printf("\n[T%d,R%d][t:%d f:%d] Took %d\n",  taskNumber,aux, xTaskGetTickCount(),SystemCoreClock/1000000, end - start );
+            
             lightUpTaskDebugLed(taskNumber);
             start = xTaskGetTickCount();
             fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
             end = xTaskGetTickCount();
-
-            pc.printf("\n[T%d,R%d][t:%d f:%d] Took %d\n",  taskNumber,runNumber, xTaskGetTickCount(),SystemCoreClock/1000000, end - start );
-        }
-        else
+       }
+        else{
             fibonnacciAuxiliar = fibonnacciCalculation(isWorstCase[runNumber] == 0 ? baseCycles : worstCaseCycles);
+        }
 
         runNumber++;
         if (runNumber > 7)
             runNumber = 0;
 
-        // If not testing light up leds
-        if (!ConsumptionTest)
-            lightUpTaskDebugLed(taskNumber);
 
         // Cycle conserving task ready finished running
         if (dvfsMode == 2)
-            cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+            aux = cycleConservingDVSTaskComplete(taskNumber, xTaskGetTickCount());
+
+        if (!ConsumptionTest){
+            pc.baud(9600);
+            pc.printf("\n[FT%d,R%d][t:%d f:%d] Took %d\n",  taskNumber,aux, xTaskGetTickCount(),SystemCoreClock/1000000, end - start );
+            lightUpTaskDebugLed(taskNumber);   
+        }
 
         // If the deadline is missed suspend all and print out a code
         if ((xTaskGetTickCount()) > xLastWakeTime + xDelay)
@@ -280,20 +288,29 @@ void vFrequencySweepTask(void *pvParameters){
     myled1 = 0;
     myled2 = 0;
     myled3 = 0;
-
+    bool climbUp = false;
     long start, end;
     for (;;)
     {
-        if(runNumber<7){
-        cycles=baseCycles*(main_frequencyLevels[runNumber]*1.0f/main_frequencyLevels[0]*1.0f);
-        frequencyLevelSelector(runNumber);
-        runNumber++;
-        }
 
+        if (climbUp) {
+			if(runNumber>0) runNumber--;
+		}
+		else {
+			if(runNumber<6) runNumber++;
+		}
+
+        
+        cycles=baseCycles*3*(main_frequencyLevels[runNumber]*1.0f/main_frequencyLevels[0]*1.0f);
+#if configDYNAMIC_FREQUENCY_TICKS == 1
+
+        frequencyLevelSelector(runNumber);
+#endif
         fibonnacciAuxiliar = fibonnacciCalculation(cycles);
+		if (runNumber == 6 || runNumber == 0) climbUp = !(climbUp);
+        vTaskDelay(300);
 
         // Explicar esse delay no modelo
-        vTaskDelayUntil(&xLastWakeTime, xDelay);
     }
 }
 void printOutNumberAsLeds(int n)
@@ -330,10 +347,30 @@ extern "C"
     void
     vApplicationIdleHook(void)
 {
-    Sleep();
-    //  DeepSleep();
-    //  PowerDown();
-    //  DeepPowerDown();
+
+    #ifdef configCPU_LOW_POWER_MODE 
+    switch (configCPU_LOW_POWER_MODE)
+    {
+    case 0:
+        Sleep();
+        break;
+    
+    case 1:
+        DeepSleep();
+        break;
+
+    case 2:
+        PowerDown();
+        break;
+
+    case 3:
+        DeepPowerDown();
+        break;
+    
+    default:
+        break;
+    }
+    #endif
 }
 
 #ifdef __cplusplus
@@ -412,7 +449,7 @@ extern "C"
 //         runNumber++;
 //         if (runNumber > 7)
 //             runNumber = 0;
-// #if magicINTERFACEDISABLE != 1
+// #if config_MAGIC_INTERFACE_DISABLE != 1
 //         switch (taskNumber)
 //         {
 //         case 1:
@@ -451,7 +488,7 @@ extern "C"
 //     int main_taskDeadlines[3] = {fixedFibonnaciTaskPeriod210ms, fixedFibonnaciTaskPeriod420ms, dynamicFibonnaciTaskPeriod};
 //     int main_frequencyLevels[6] = {96, 80, 72, 48, 24, 16};
 
-// #if magicINTERFACEDISABLE == 1
+// #if config_MAGIC_INTERFACE_DISABLE == 1
 //     int usbCONNECTED = vUSBIN;
 //     if (usbCONNECTED == 0)
 //     {

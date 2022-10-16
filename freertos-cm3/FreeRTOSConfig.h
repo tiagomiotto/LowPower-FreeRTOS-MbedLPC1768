@@ -42,14 +42,12 @@ extern uint32_t SystemCoreClock;
 
 /* User included */
 
-/* Set configDYNAMIC_FREQUENCY_LOW_POWER_MODE to one to run the simple blinky low power
-demo, or 0 to run the more comprehensive test and demo application. */
-#define configDYNAMIC_FREQUENCY_LOW_POWER_MODE 1
 
 // #define DEBUG 1
 
 // Runtime
 #include "TARGET_LPC1768_N/LPC17xx.h"
+#include "config.h"
 
 // extern volatile unsigned long ulHighFrequencyTimerTicks;
 // extern void vConfigureTimerForRunTimeStats(void);
@@ -70,7 +68,6 @@ demo, or 0 to run the more comprehensive test and demo application. */
 /* System defined */
 #define configUSE_PREEMPTION 1
 #define configUSE_TICK_HOOK 0
-#define configUSE_IDLE_HOOK 1
 #define configCPU_CLOCK_HZ (SystemCoreClock)
 #define configTICK_RATE_HZ ((TickType_t)100)
 #define configMAX_PRIORITIES (5)
@@ -94,7 +91,7 @@ demo, or 0 to run the more comprehensive test and demo application. */
 #define configMAX_CO_ROUTINE_PRIORITIES (2)
 
 /* Software timer definitions. */
-#define configUSE_TIMERS 1
+#define configUSE_TIMERS 0
 #define configTIMER_TASK_PRIORITY (2)
 #define configTIMER_QUEUE_LENGTH 5
 #define configTIMER_TASK_STACK_DEPTH (configMINIMAL_STACK_SIZE * 2)
@@ -150,23 +147,6 @@ standard names. */
 #define xPortPendSVHandler PendSV_Handler
 
 /* User Defines */
-
-/* A few settings are dependent on the configDYNAMIC_FREQUENCY_LOW_POWER_MODE setting. */
-#if configDYNAMIC_FREQUENCY_LOW_POWER_MODE == 1
-
-#define configTICK_RATE_HZ (100)
-#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP (20 + 1) /* ( ( 200 / portTICK_PERIOD_MS ) + 1 ) written out pre-processed to enable #error statements to check its value. */
-#define configUSE_TIMERS 0
-#define dynamicFrequencySysTickHandler SysTick_Handler
-#define portSUPPRESS_TICKS_AND_SLEEP(xIdleTime) vApplicationSleep(xIdleTime)
-#define configUSE_TICKLESS_IDLE 0
-#define configUSE_IDLE_HOOK 1
-
-
-#else
-#define xPortSysTickHandler SysTick_Handler
-
-#endif
 
 
 
